@@ -79,6 +79,7 @@
       --shadow-hover:   0 4px 36px rgba(99,102,241,0.22), 0 0 0 1px var(--border-hover);
     }
 
+    /* ─── Base ────────────────────────────────────────────────────────── */
     html {
       scroll-behavior: smooth;
       font-family: 'Inter', system-ui, sans-serif;
@@ -89,6 +90,7 @@
 
     body { min-height: 100vh; overflow-x: hidden; }
 
+    /* ─── WebGL canvas ────────────────────────────────────────────────── */
     #fluid {
       position: fixed;
       inset: 0;
@@ -101,6 +103,7 @@
       transition: opacity 0.5s ease;
     }
 
+    /* ─── Background blobs ────────────────────────────────────────────── */
     .blobs {
       position: fixed;
       inset: 0;
@@ -151,6 +154,7 @@
       50%      { transform: translate(70px,-40px) scale(1.07); }
     }
 
+    /* ─── Header ──────────────────────────────────────────────────────── */
     .site-header {
       position: fixed;
       inset: 0 0 auto 0;
@@ -196,6 +200,7 @@
       transform: rotate(15deg);
     }
 
+    /* ─── Main — pointer-events pass-through ──────────────────────────── */
     main {
       position: relative;
       z-index: 1;
@@ -210,11 +215,13 @@
       pointer-events: auto;
     }
 
+    /* ─── Sections ────────────────────────────────────────────────────── */
     section {
       padding-left: 24px;
       padding-right: 24px;
     }
 
+    /* ─── Hero ────────────────────────────────────────────────────────── */
     #hero {
       position: relative;
       min-height: 100vh;
@@ -326,6 +333,7 @@
       justify-content: center;
     }
 
+    /* ─── Buttons ─────────────────────────────────────────────────────── */
     .btn {
       display: inline-flex;
       align-items: center;
@@ -367,6 +375,7 @@
       transform: translateY(-2px);
     }
 
+    /* Scroll indicator */
     .scroll-hint {
       position: absolute;
       bottom: 36px;
@@ -389,6 +398,7 @@
       50%      { transform: translateX(-50%) translateY(7px); }
     }
 
+    /* ─── Tilt card ───────────────────────────────────────────────────── */
     .tilt-card {
       position: relative;
       background: var(--surface);
@@ -409,6 +419,7 @@
       border-color: var(--border-hover);
     }
 
+    /* Holographic sheen sweep */
     .tilt-card::after {
       content: '';
       position: absolute;
@@ -435,6 +446,7 @@
       background-position: 100% 100%;
     }
 
+    /* Radial spotlight following cursor */
     .tilt-card::before {
       content: '';
       position: absolute;
@@ -452,6 +464,7 @@
 
     .tilt-card:hover::before { opacity: 1; }
 
+    /* ─── Section chrome ──────────────────────────────────────────────── */
     .section-label {
       font-size: 0.7rem;
       font-weight: 700;
@@ -461,6 +474,7 @@
       margin-bottom: 20px;
     }
 
+    /* ─── Sobre ───────────────────────────────────────────────────────── */
     #sobre {
       max-width: 660px;
       margin: 0 auto;
@@ -487,6 +501,7 @@
 
     .sobre-body p + p { margin-top: 14px; }
 
+    /* ─── Stack ───────────────────────────────────────────────────────── */
     #stack {
       max-width: 780px;
       margin: 0 auto;
@@ -528,6 +543,7 @@
       transition: border-color 0.22s, background 0.22s, color 0.22s, transform 0.22s, box-shadow 0.22s;
     }
 
+    /* Shimmer sweep on hover */
     .stack-badge::after {
       content: '';
       position: absolute;
@@ -562,6 +578,7 @@
     .dot-dev     { background: var(--violet-400); }
     .dot-product { background: var(--purple-400); }
 
+    /* ─── Footer ──────────────────────────────────────────────────────── */
     footer {
       position: relative;
       z-index: 1;
@@ -606,6 +623,7 @@
       color: var(--text-muted);
     }
 
+    /* ─── Entrance animations ─────────────────────────────────────────── */
     .fade-up {
       opacity: 0;
       transform: translateY(28px);
@@ -615,6 +633,7 @@
 
     .fade-up.in { opacity: 1; transform: translateY(0); }
 
+    /* ─── Responsive ──────────────────────────────────────────────────── */
     @media (max-width: 600px) {
       .site-header { padding: 14px 18px; }
       section { padding-left: 16px; padding-right: 16px; }
@@ -623,11 +642,13 @@
       #sobre, #stack { padding-top: 80px; }
     }
 
+    /* ─── Selection ───────────────────────────────────────────────────── */
     ::selection {
       background: rgba(99,102,241,0.28);
       color: var(--text-bright);
     }
 
+    /* ─── Scrollbar ───────────────────────────────────────────────────── */
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb {
@@ -639,14 +660,17 @@
 </head>
 
 <body>
+  <!-- WebGL fluid cursor trail -->
   <canvas id="fluid"></canvas>
 
+  <!-- Background blobs -->
   <div class="blobs" aria-hidden="true">
     <div class="blob blob-1"></div>
     <div class="blob blob-2"></div>
     <div class="blob blob-3"></div>
   </div>
 
+  <!-- Header -->
   <header class="site-header">
     <a href="#" class="nav-brand">dosxnjos</a>
     <button class="theme-btn" id="theme-toggle" aria-label="Alternar tema">
@@ -667,21 +691,29 @@
     </button>
   </header>
 
+  <!-- Main -->
   <main>
+
+    <!-- ── Hero ── -->
     <section id="hero">
+
       <div class="hero-eyebrow fade-up" data-delay="0">
         Analista de Dados &middot; Produto
       </div>
+
       <h1 class="hero-name fade-up" data-delay="120">
         Gabriel<br>dos Anjos
       </h1>
+
       <p class="hero-role fade-up" data-delay="240">
         Produto &times; Dados &times; Automação
       </p>
+
       <p class="hero-bio fade-up" data-delay="340">
         Transformo dados em decisões — do pipeline ao insight,
         sem intermediários.
       </p>
+
       <div class="hero-cta fade-up" data-delay="460">
         <a href="https://github.com/dosxnjos" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -696,6 +728,7 @@
           LinkedIn
         </a>
       </div>
+
       <div class="scroll-hint" aria-hidden="true">
         <span>scroll</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -704,6 +737,7 @@
       </div>
     </section>
 
+    <!-- ── Sobre ── -->
     <section id="sobre">
       <div class="tilt-card fade-up" id="sobre-card">
         <p class="section-label">Sobre</p>
@@ -722,8 +756,10 @@
       </div>
     </section>
 
+    <!-- ── Stack ── -->
     <section id="stack">
       <p class="section-label fade-up">Stack</p>
+
       <div class="stack-group fade-up" data-delay="60">
         <p class="stack-group-label">Dados</p>
         <div class="stack-row">
@@ -736,6 +772,7 @@
           <span class="stack-badge"><span class="badge-dot dot-data"></span>Supabase</span>
         </div>
       </div>
+
       <div class="stack-group fade-up" data-delay="140">
         <p class="stack-group-label">Dev</p>
         <div class="stack-row">
@@ -748,6 +785,7 @@
           <span class="stack-badge"><span class="badge-dot dot-dev"></span>Flask</span>
         </div>
       </div>
+
       <div class="stack-group fade-up" data-delay="220">
         <p class="stack-group-label">Produto</p>
         <div class="stack-row">
@@ -759,8 +797,10 @@
         </div>
       </div>
     </section>
+
   </main>
 
+  <!-- Footer -->
   <footer>
     <nav class="social-row" aria-label="Redes sociais">
       <a href="https://github.com/dosxnjos" class="social-link" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
@@ -779,13 +819,19 @@
           <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
         </svg>
       </a>
+      <a href="https://wa.me/5548988020107" class="social-link" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+      </a>
     </nav>
-    <p class="footer-copy">Gabriel dos Anjos &mdash; 2025</p>
+    <p class="footer-copy">Gabriel dos Anjos &mdash; <span id="footer-year">2026</span></p>
   </footer>
 
   <script type="module">
     import WebGLFluid from 'https://esm.run/webgl-fluid@0.4.0';
 
+    /* ─── Fluid cursor trail ─────────────────────────────────────────── */
     const canvas = document.getElementById('fluid');
 
     WebGLFluid(canvas, {
@@ -810,10 +856,11 @@
       AUTO:                 false,
     });
 
-    const root    = document.documentElement;
-    const toggle  = document.getElementById('theme-toggle');
-    const sunIco  = document.getElementById('icon-sun');
-    const moonIco = document.getElementById('icon-moon');
+    /* ─── Theme ──────────────────────────────────────────────────────── */
+    const root   = document.documentElement;
+    const toggle = document.getElementById('theme-toggle');
+    const sunIco = document.getElementById('icon-sun');
+    const moonIco= document.getElementById('icon-moon');
 
     const applyTheme = (t) => {
       root.dataset.theme = t;
@@ -829,18 +876,24 @@
       localStorage.setItem('theme', next);
     });
 
+    /* ─── 3D Tilt ────────────────────────────────────────────────────── */
     const TILT_STRENGTH = 11;
 
     function initTilt(card) {
       card.addEventListener('mousemove', (e) => {
-        const r  = card.getBoundingClientRect();
-        const nx = (e.clientX - r.left) / r.width  - 0.5;
-        const ny = (e.clientY - r.top)  / r.height - 0.5;
-        card.style.setProperty('--mx', ((e.clientX - r.left) / r.width  * 100).toFixed(1) + '%');
-        card.style.setProperty('--my', ((e.clientY - r.top)  / r.height * 100).toFixed(1) + '%');
-        card.style.transform = `perspective(900px) rotateY(${(nx * TILT_STRENGTH).toFixed(2)}deg) rotateX(${(-ny * TILT_STRENGTH).toFixed(2)}deg) translateZ(10px)`;
+        const r   = card.getBoundingClientRect();
+        const nx  = (e.clientX - r.left) / r.width  - 0.5;
+        const ny  = (e.clientY - r.top)  / r.height - 0.5;
+        const mx  = ((e.clientX - r.left) / r.width  * 100).toFixed(1) + '%';
+        const my  = ((e.clientY - r.top)  / r.height * 100).toFixed(1) + '%';
+
+        card.style.setProperty('--mx', mx);
+        card.style.setProperty('--my', my);
+        card.style.transform =
+          `perspective(900px) rotateY(${(nx * TILT_STRENGTH).toFixed(2)}deg) rotateX(${(-ny * TILT_STRENGTH).toFixed(2)}deg) translateZ(10px)`;
         card.style.transition = 'transform 0.08s linear, box-shadow 0.4s ease, border-color 0.4s ease';
       });
+
       card.addEventListener('mouseleave', () => {
         card.style.transform = 'perspective(900px) rotateY(0deg) rotateX(0deg) translateZ(0)';
         card.style.transition = 'transform 0.55s cubic-bezier(0.23,1,0.32,1), box-shadow 0.4s ease, border-color 0.4s ease';
@@ -849,15 +902,20 @@
 
     document.querySelectorAll('.tilt-card').forEach(initTilt);
 
+    /* ─── Entrance animations ────────────────────────────────────────── */
+    // Hero items fire immediately with staggered delays
     document.querySelectorAll('#hero .fade-up').forEach((el) => {
-      setTimeout(() => el.classList.add('in'), parseInt(el.dataset.delay || 0, 10));
+      const delay = parseInt(el.dataset.delay || 0, 10);
+      setTimeout(() => el.classList.add('in'), delay);
     });
 
+    // All other .fade-up elements use IntersectionObserver
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
           if (!e.isIntersecting) return;
-          setTimeout(() => e.target.classList.add('in'), parseInt(e.target.dataset.delay || 0, 10));
+          const delay = parseInt(e.target.dataset.delay || 0, 10);
+          setTimeout(() => e.target.classList.add('in'), delay);
           io.unobserve(e.target);
         });
       },
@@ -865,6 +923,8 @@
     );
 
     document.querySelectorAll('.fade-up:not(#hero .fade-up)').forEach((el) => io.observe(el));
+
+    document.getElementById('footer-year').textContent = new Date().getFullYear();
   </script>
 </body>
 </html>

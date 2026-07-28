@@ -90,18 +90,23 @@
 
     body { min-height: 100vh; overflow-x: hidden; }
 
-    /* ─── WebGL canvas ────────────────────────────────────────────────── */
+    /* ─── WebGL fluid trail ───────────────────────────────────────────────
+       ⚠️ webgl-fluid-enhanced espera um CONTÊINER (div), não um <canvas> — ele
+       cria e gerencia o próprio <canvas> interno e SOBRESCREVE o atributo
+       `style` do elemento que recebe (seta position:relative;display:flex).
+       `!important` em position/inset é o que garante o fixed sobre esse
+       inline style escrito por fora do CSS. */
     #fluid {
-      position: fixed;
-      inset: 0;
+      position: fixed !important;
+      inset: 0 !important;
       width: 100vw;
       height: 100vh;
       z-index: 0;
-      display: block;
       touch-action: none;
       opacity: var(--canvas-opacity);
       transition: opacity 0.5s ease;
     }
+    #fluid canvas { width: 100% !important; height: 100% !important; display: block !important; }
 
     /* ─── Background blobs ────────────────────────────────────────────── */
     .blobs {
@@ -506,7 +511,7 @@
       max-width: 780px;
       margin: 0 auto;
       padding-top: 40px;
-      padding-bottom: 130px;
+      padding-bottom: 90px;
     }
 
     .stack-group + .stack-group { margin-top: 24px; }
@@ -567,6 +572,58 @@
     }
 
     .stack-badge:hover::after { transform: translateX(110%); }
+
+    /* ─── Projetos ────────────────────────────────────────────────────── */
+    #projetos {
+      max-width: 780px;
+      margin: 0 auto;
+      padding-top: 0;
+      padding-bottom: 130px;
+    }
+
+    .project-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .project-item {
+      position: relative;
+      display: block;
+      padding: 16px 18px;
+      border-radius: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      overflow: hidden;
+      transition: border-color 0.22s, background 0.22s, transform 0.22s, box-shadow 0.22s;
+    }
+
+    .project-item:hover {
+      border-color: var(--border-hover);
+      background: var(--surface-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px var(--glow);
+    }
+
+    .project-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 0.98rem;
+      color: var(--text-bright);
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .project-name svg { flex-shrink: 0; opacity: 0.65; }
+
+    .project-desc {
+      margin-top: 5px;
+      font-size: 0.86rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
 
     .badge-dot {
       width: 7px; height: 7px;
@@ -668,7 +725,7 @@
 
 <body>
   <!-- WebGL fluid cursor trail -->
-  <canvas id="fluid"></canvas>
+  <div id="fluid"></div>
 
   <!-- Background blobs -->
   <div class="blobs" aria-hidden="true">
@@ -790,6 +847,10 @@
           <span class="stack-badge"><span class="badge-dot dot-dev"></span>GitHub Actions</span>
           <span class="stack-badge"><span class="badge-dot dot-dev"></span>PowerShell</span>
           <span class="stack-badge"><span class="badge-dot dot-dev"></span>Flask</span>
+          <span class="stack-badge"><span class="badge-dot dot-dev"></span>Playwright</span>
+          <span class="stack-badge"><span class="badge-dot dot-dev"></span>Tauri/Rust</span>
+          <span class="stack-badge"><span class="badge-dot dot-dev"></span>Whisper &middot; OpenVINO</span>
+          <span class="stack-badge"><span class="badge-dot dot-dev"></span>Claude Agent SDK</span>
         </div>
       </div>
 
@@ -802,6 +863,41 @@
           <span class="stack-badge"><span class="badge-dot dot-product"></span>Analytics</span>
           <span class="stack-badge"><span class="badge-dot dot-product"></span>Automação</span>
         </div>
+      </div>
+    </section>
+
+    <!-- ── Projetos ── -->
+    <section id="projetos">
+      <p class="section-label fade-up">Projetos</p>
+      <div class="project-list">
+        <a class="project-item fade-up" data-delay="0" href="https://github.com/dosxnjos/fluid-cursor-trail" target="_blank" rel="noopener">
+          <span class="project-name">fluid-cursor-trail</span>
+          <p class="project-desc">Rastro de cursor com simulação de fluido WebGL (Navier-Stokes na GPU), com bancadas de calibração ao vivo</p>
+        </a>
+        <a class="project-item fade-up" data-delay="40" href="https://github.com/dosxnjos/reco" target="_blank" rel="noopener">
+          <span class="project-name">reco</span>
+          <p class="project-desc">Gravador para Windows (microfone + áudio do sistema via WASAPI) com transcrição 100% local (Whisper/OpenVINO)</p>
+        </a>
+        <a class="project-item fade-up" data-delay="80" href="https://github.com/dosxnjos/claude-usage-tray" target="_blank" rel="noopener">
+          <span class="project-name">claude-usage-tray</span>
+          <p class="project-desc">App de bandeja do Windows que mostra, no hover, o uso das contas Claude (janelas de 5h/7d)</p>
+        </a>
+        <a class="project-item fade-up" data-delay="120" href="https://github.com/dosxnjos/playwright" target="_blank" rel="noopener">
+          <span class="project-name">playwright <span style="font-weight:400;color:var(--text-muted);font-size:0.8em;">(fork)</span></span>
+          <p class="project-desc">Fork do Playwright MCP: extensão Chrome com múltiplas conexões simultâneas</p>
+        </a>
+        <a class="project-item fade-up" data-delay="160" href="https://github.com/dosxnjos/disclaw" target="_blank" rel="noopener">
+          <span class="project-name">disclaw</span>
+          <p class="project-desc">Bot de Discord conectado ao Claude Code via Agent SDK — conversa em threads de fórum</p>
+        </a>
+        <a class="project-item fade-up" data-delay="200" href="https://github.com/dosxnjos/claude-switch-gui" target="_blank" rel="noopener">
+          <span class="project-name">claude-switch-gui</span>
+          <p class="project-desc">GUI para alternar entre contas do Claude Code</p>
+        </a>
+        <a class="project-item fade-up" data-delay="240" href="https://github.com/dosxnjos/Pake" target="_blank" rel="noopener">
+          <span class="project-name">Pake <span style="font-weight:400;color:var(--text-muted);font-size:0.8em;">(fork)</span></span>
+          <p class="project-desc">Empacota qualquer site como app desktop leve (Tauri/Rust)</p>
+        </a>
       </div>
     </section>
 
@@ -840,32 +936,50 @@
   </footer>
 
   <script type="module">
-    import WebGLFluid from 'https://esm.run/webgl-fluid@0.4.0';
+    import WebGLFluidEnhanced from 'https://esm.run/webgl-fluid-enhanced@0.8.0';
 
-    /* ─── Fluid cursor trail ─────────────────────────────────────────── */
-    const canvas = document.getElementById('fluid');
+    /* ─── Fluid cursor trail ─────────────────────────────────────────────
+       Migrado de webgl-fluid para o fork em classe webgl-fluid-enhanced
+       (27/07/2026): start()/stop() reais, idle-pause e prefers-reduced-motion
+       — mesma migração feita em github.com/dosxnjos/fluid-cursor-trail. */
+    const fluidWrap = document.getElementById('fluid');
 
-    WebGLFluid(canvas, {
-      TRANSPARENT:          true,
-      BACK_COLOR:           { r: 8, g: 7, b: 26 },
-      BLOOM:                true,
-      BLOOM_INTENSITY:      0.45,
-      BLOOM_THRESHOLD:      0.65,
-      BLOOM_SOFT_KNEE:      0.7,
-      SUNRAYS:              false,
-      DENSITY_DISSIPATION:  3.0,
-      VELOCITY_DISSIPATION: 0.42,
-      CURL:                 10,
-      SPLAT_RADIUS:         0.19,
-      SPLAT_FORCE:          4800,
-      COLORFUL:             false,
-      SPLAT_COLOR:          { r: 0.3, g: 0.18, b: 1.0 },
-      SIM_RESOLUTION:       96,
-      DYE_RESOLUTION:       512,
-      TRIGGER:              'hover',
-      IMMEDIATE:            false,
-      AUTO:                 false,
-    });
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const sim = new WebGLFluidEnhanced(fluidWrap);
+      sim.setConfig({
+        transparent:          true,
+        backgroundColor:      '#08071a',
+        bloom:                true,
+        bloomIntensity:       0.45,
+        bloomThreshold:       0.65,
+        bloomSoftKnee:        0.7,
+        sunrays:              false,
+        densityDissipation:   3.0,
+        velocityDissipation:  0.42,
+        curl:                 10,
+        splatRadius:          0.19,
+        splatForce:           4800,
+        colorful:             false,
+        colorPalette:         ['#4D2EFF'],
+        simResolution:        96,
+        dyeResolution:        512,
+        hover:                true,
+      });
+      sim.start();
+
+      // Idle-pause: pausa o rAF contínuo do solver após 3s sem movimento do
+      // ponteiro (custo de GPU/bateria parado) e retoma no próximo movimento.
+      let idleTimer = null, paused = false;
+      const armarIdle = () => {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => { sim.stop(); paused = true; }, 3000);
+      };
+      window.addEventListener('pointermove', () => {
+        if (paused) { sim.start(); paused = false; }
+        armarIdle();
+      }, { passive: true });
+      armarIdle();
+    }
 
     /* ─── Theme ──────────────────────────────────────────────────────── */
     const root   = document.documentElement;

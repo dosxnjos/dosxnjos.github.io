@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="pt-BR" data-os="unknown">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1014" media="(prefers-color-scheme: dark)">
+<!-- No network at all: everything is inline and the page never sends data anywhere. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<title>Lacre: confira um iPhone usado antes de comprar</title>
+<meta name="description" content="Programa gratuito e de código aberto para Windows, Mac e Linux. Ligue o iPhone usado no computador pelo cabo e veja se ele tem trava de compra, peças trocadas e como está a bateria.">
+<link rel="canonical" href="https://dosxnjos.github.io/lacre/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%232563eb' stroke-width='2.6'/%3E%3Cpath d='M11.5 16.4l3 3 6-6.4' fill='none' stroke='%232563eb' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Lacre">
+<meta property="og:url" content="https://dosxnjos.github.io/lacre/">
+<meta property="og:title" content="Lacre: confira um iPhone usado antes de comprar">
+<meta property="og:description" content="Programa gratuito para Windows, Mac e Linux. Ligue o iPhone no computador e veja travas de compra, peças trocadas e a saúde da bateria. Nada sai do seu computador.">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Lacre: confira um iPhone usado antes de comprar">
+<meta name="twitter:description" content="Programa gratuito para Windows, Mac e Linux. Ligue o iPhone no computador e veja travas de compra, peças trocadas e a saúde da bateria.">
+<style>
+:root{
+  --bg:#f4f5f7;--fg:#14161a;--muted:#525a66;--card:#ffffff;--line:#dfe2e7;
+  --accent:#2563eb;--accent-hover:#1d4ed8;--accent-fg:#ffffff;--accent-soft:#e8efff;--chip:#eef0f3;
+  /* Filled buttons and step numbers: the same darker blue in both themes, so white text stays above 4.5:1. */
+  --btn:#2563eb;--btn-hover:#1d4ed8;--btn-fg:#ffffff;
+  --ok:#15803d;--ok-bg:#dcfce7;--warn:#92400e;--warn-bg:#fef3c7;
+  --focus:#2563eb;--code-bg:#eef0f3;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0e1014;--fg:#eef0f3;--muted:#a3abb7;--card:#171a20;--line:#2a2f38;
+    --accent:#4f8cff;--accent-hover:#6b9dff;--accent-fg:#ffffff;--accent-soft:#16233d;--chip:#20242c;
+    --btn:#2563eb;--btn-hover:#1d4ed8;--btn-fg:#ffffff;
+    --ok:#34d399;--ok-bg:#0f2e22;--warn:#fbbf24;--warn-bg:#33270a;
+    --focus:#8fb4ff;--code-bg:#20242c;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+a:hover{color:var(--accent-hover)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit;cursor:pointer}
+code,kbd{font:14px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code-bg);
+  padding:1px 6px;border-radius:6px;overflow-wrap:anywhere}
+.skip{position:absolute;left:-9999px;top:8px;background:var(--card);padding:8px 12px;border-radius:8px;z-index:10}
+.skip:focus{left:16px}
+.wrap{max-width:980px;margin:0 auto;
+  padding:0 calc(env(safe-area-inset-right) + 16px) 0 calc(env(safe-area-inset-left) + 16px)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px;letter-spacing:.2px;color:var(--fg);text-decoration:none}
+.brand svg{width:28px;height:28px;color:var(--accent)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);
+  background:var(--card);color:var(--fg);padding:10px 16px;border-radius:12px;font-weight:600;text-decoration:none;line-height:1.3}
+.btn:hover{border-color:var(--accent);color:var(--fg)}
+.btn.ghost{background:transparent}
+.btn.primary{background:var(--btn);border-color:var(--btn);color:var(--btn-fg)}
+.btn.primary:hover{background:var(--btn-hover);border-color:var(--btn-hover);color:var(--btn-fg)}
+.btn svg{width:20px;height:20px;flex:none}
+
+/* hero */
+.hero{padding:20px 0 8px}
+h1{font-size:clamp(28px,5.4vw,44px);line-height:1.12;margin:8px 0 12px;letter-spacing:-.5px;max-width:20ch}
+.lead{font-size:clamp(17px,2.2vw,19px);color:var(--muted);margin:0 0 22px;max-width:60ch}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 24px;padding:0;list-style:none}
+.facts li{font-size:14px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--chip);color:var(--muted)}
+
+.dl{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;margin:0 0 12px}
+.dl h2{font-size:15px;font-weight:600;color:var(--muted);margin:0 0 12px}
+.dl-main{display:flex;flex-wrap:wrap;gap:10px}
+.dl-main:empty{display:none}
+.dl-main:empty + div .dl-note{margin-top:0}
+.big{font-size:18px;padding:16px 22px;border-radius:14px;flex:1 1 280px;min-height:64px}
+.big .sub{display:block;font-size:13px;font-weight:500}
+.big:not(.primary) .sub{color:var(--muted)}
+.big .txt{text-align:left}
+.archnote{margin-top:14px;background:var(--warn-bg);color:var(--fg);border-radius:14px;padding:12px 14px;font-size:15px}
+.archnote b{color:var(--warn)}
+.dl-alt{flex:1 1 220px}
+.dl-note{font-size:15px;color:var(--muted);margin:14px 0 0}
+.dl-note b{color:var(--fg)}
+.which{margin-top:14px;background:var(--accent-soft);border-radius:14px;padding:12px 14px;font-size:15px}
+.which p{margin:0 0 6px}
+.which p:last-child{margin:0}
+.which a{color:var(--accent-hover)}
+.mobile{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;margin:0 0 12px}
+.mobile h2{font-size:20px;margin:0 0 8px}
+.mobile p{margin:0 0 12px;color:var(--muted)}
+.mobile .actions{display:flex;flex-wrap:wrap;gap:10px}
+#shareMsg{min-height:1.4em;font-size:14px;color:var(--muted);margin:8px 0 0}
+
+.others{margin:18px 0 8px}
+.others h2{font-size:15px;color:var(--muted);font-weight:600;margin:0 0 10px}
+.osgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.osbox{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.osbox h3{font-size:16px;margin:0 0 6px}
+.osbox ul{list-style:none;margin:0;padding:0}
+.osbox li{margin:6px 0}
+.osbox a{font-weight:600;text-decoration:none}
+.osbox a:hover{text-decoration:underline}
+.osbox .ext{font-weight:400;color:var(--muted);font-size:14px}
+
+/* sections */
+section.block{padding:36px 0 8px;scroll-margin-top:12px}
+section.block > h2{font-size:clamp(22px,3.4vw,28px);line-height:1.2;margin:0 0 8px;letter-spacing:-.3px}
+section.block > .intro{color:var(--muted);margin:0 0 18px;max-width:64ch}
+
+/* tabs */
+.tabs{display:inline-flex;flex-wrap:wrap;background:var(--chip);border-radius:14px;padding:4px;gap:2px;margin:0 0 16px}
+.tabs button{border:0;background:transparent;padding:9px 18px;border-radius:10px;font-weight:600;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 20px 18px}
+.panel[hidden]{display:none}
+ol.steps{list-style:none;counter-reset:s;margin:0;padding:0}
+ol.steps > li{counter-increment:s;position:relative;padding:16px 0 16px 46px;border-bottom:1px solid var(--line)}
+ol.steps > li:last-child{border-bottom:0}
+ol.steps > li::before{content:counter(s);position:absolute;left:0;top:15px;width:32px;height:32px;border-radius:50%;
+  background:var(--btn);color:var(--btn-fg);display:grid;place-items:center;font-weight:700;font-size:15px}
+ol.steps h3{font-size:17px;margin:3px 0 6px}
+ol.steps p{margin:0 0 8px}
+ol.steps p:last-child{margin-bottom:0}
+.hint{font-size:15px;color:var(--muted)}
+.why{font-size:15px;background:var(--warn-bg);color:var(--fg);border-radius:12px;padding:10px 12px;margin:10px 0 0}
+.why b{color:var(--warn)}
+details.more{margin:10px 0 0;font-size:15px}
+details.more summary{cursor:pointer;font-weight:600;color:var(--accent);padding:4px 0}
+details.more > div{padding:6px 0 0}
+.inline-btns{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
+.inline-btns .btn{font-size:15px;padding:8px 14px}
+.case{margin:14px 0 0;padding:12px 14px;border:1px solid var(--line);border-radius:14px}
+.case > p{margin:0 0 8px}
+.case > p:last-child{margin-bottom:0}
+.case .lbl{font-weight:700}
+.case ul{margin:0 0 10px;padding-left:20px}
+.case li{margin:4px 0}
+.cmd{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0}
+.cmd code{font-size:15px;padding:6px 10px;min-width:0}
+.cmd .btn{font-size:15px;padding:6px 14px}
+.copymsg{font-size:14px;color:var(--muted);min-height:1.4em;margin:0}
+
+/* mockups: drawn to look like the real dialogs, fixed colors on purpose */
+.mocks{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0 4px}
+.mock{flex:1 1 260px;max-width:380px;border-radius:10px;font-family:"Segoe UI",-apple-system,system-ui,sans-serif;
+  box-shadow:0 2px 10px rgba(0,0,0,.18);overflow:hidden;position:relative}
+.mock .tag{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:#ffd400;color:#111;
+  font:700 13px/24px system-ui,sans-serif;text-align:center}
+.ss{background:#0b5cad;color:#fff;padding:18px 18px 14px}
+.ss .t{font-size:19px;font-weight:300;margin:0 0 10px;padding-right:24px;line-height:1.25}
+.ss .d{font-size:13px;margin:0 0 10px;line-height:1.4}
+.ss .lnk{font-size:13px;text-decoration:underline}
+.ss .kv{font-size:13px;margin:0 0 4px}
+.ss .row{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;margin-top:14px}
+.ss .b{font-size:13px;padding:5px 14px;border:2px solid #fff;color:#fff;background:transparent;white-space:nowrap}
+.ring{outline:3px solid #ffd400;outline-offset:3px;border-radius:2px}
+.mac{background:#f5f5f7;color:#1d1d1f;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+.mac .bar{display:flex;gap:6px;align-items:center;padding:9px 12px;background:#e8e8ed;border-bottom:1px solid #d2d2d7}
+.mac .bar i{width:11px;height:11px;border-radius:50%;background:#ff5f57;display:block}
+.mac .bar i:nth-child(2){background:#febc2e}
+.mac .bar i:nth-child(3){background:#28c840}
+.mac .bar span{font-size:12px;font-weight:600;margin-left:8px;color:#3a3a3c}
+.mac .body{padding:14px 16px 16px}
+.mac .sec{font-size:12px;font-weight:600;color:#6e6e73;margin:0 0 6px}
+.mac .box{background:#fff;border:1px solid #d2d2d7;border-radius:8px;padding:10px 12px;display:flex;flex-wrap:wrap;
+  align-items:center;justify-content:space-between;gap:10px}
+.mac .box p{margin:0;font-size:13px;line-height:1.35;flex:1 1 150px}
+.mac .mb{font-size:13px;padding:4px 12px;border-radius:6px;background:#fff;border:1px solid #c7c7cc;color:#1d1d1f;white-space:nowrap}
+.mac .alert{padding:18px 16px 14px;text-align:center}
+.mac .alert .t{font-size:14px;font-weight:700;margin:0 0 6px;padding:0 24px}
+.mac .alert .d{font-size:12px;margin:0 0 12px;color:#3a3a3c;line-height:1.35}
+.mac .alert .col{display:grid;gap:6px}
+.mac .alert .mb{display:block;text-align:center}
+.mac .alert .mb.blue{background:#0064d2;border-color:#0064d2;color:#fff}.ios{background:#f2f2f7;color:#000;border-radius:14px;max-width:270px;text-align:center;
+  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;flex:0 1 270px}
+.ios .in{padding:16px 16px 14px}
+.ios .t{font-size:15px;font-weight:600;margin:0 0 4px}
+.ios .d{font-size:12px;margin:0;line-height:1.35}
+.ios .row{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #c6c6c8}
+.ios .row span{padding:10px 4px;font-size:15px;color:#0062cc}
+.ios .row span + span{border-left:1px solid #c6c6c8;font-weight:600}
+.mockcap{font-size:14px;color:var(--muted);margin:6px 0 0}
+
+.connect{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;background:var(--card);border:1px solid var(--line);
+  border-radius:20px;padding:18px 20px;margin:14px 0 0}
+.connect > div{flex:1 1 300px}
+.connect h3{font-size:17px;margin:0 0 8px}
+.connect ul{margin:0;padding-left:20px}
+.connect li{margin:6px 0}
+
+/* checks */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px}
+.card .ic{width:36px;height:36px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:10px}
+.card .ic svg{width:20px;height:20px}
+.card h3{font-size:17px;margin:0 0 6px}
+.card p{margin:0;color:var(--muted);font-size:15px}
+.howlong{margin:14px 0 0;color:var(--muted);font-size:15px}
+
+.note{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--ok);border-radius:14px;padding:16px 18px}
+.note.limits{border-left-color:var(--warn)}
+.note h2{font-size:20px;margin:0 0 8px}
+.note p{margin:0 0 8px}
+.note p:last-child{margin:0}
+.note ul{margin:0 0 8px;padding-left:20px}
+.note li{margin:4px 0}
+
+footer{margin:44px 0 0;padding:22px 0 calc(env(safe-area-inset-bottom) + 28px);border-top:1px solid var(--line);
+  font-size:14px;color:var(--muted)}
+footer p{margin:0 0 6px}
+
+@media (max-width:520px){
+  .dl,.mobile,.panel,.connect{padding-left:16px;padding-right:16px}
+  .big{font-size:17px;padding:14px 16px}
+  ol.steps > li{padding-left:42px}
+  .tabs{display:flex}
+  .tabs button{flex:1 1 auto;padding:9px 10px}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#instalar" data-i18n="skip"></a>
+<noscript><p style="margin:16px;font-size:15px">Downloads: <a href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Windows-Instalador.exe">Windows (.exe)</a> · <a href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Windows-Portatil.zip">Windows (.zip)</a> · <a href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Mac-AppleSilicon.dmg">Mac Apple silicon</a> · <a href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Mac-Intel.dmg">Mac Intel</a> · <a href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Linux.AppImage">Linux AppImage</a> · <a href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Linux.deb">Linux .deb</a> · <a href="https://github.com/dosxnjos/lacre">GitHub</a></p></noscript>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./" aria-label="Lacre">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="16" cy="16" r="8.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="2 2.2"/><path d="M11.5 16.4l3 3 6-6.4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span data-i18n="brand"></span>
+    </a>
+    <button id="langBtn" class="btn ghost" type="button" lang="en"></button>
+  </header>
+
+  <main id="main">
+    <div class="hero">
+      <h1 data-i18n="h1"></h1>
+      <p class="lead" data-i18n="lead"></p>
+      <ul class="facts">
+        <li data-i18n="fact_free"></li>
+        <li data-i18n="fact_local"></li>
+        <li data-i18n="fact_readonly"></li>
+      </ul>
+
+      <!-- Primary download, filled by script for the visitor's system -->
+      <section id="dl" class="dl" aria-labelledby="dlTitle" hidden>
+        <h2 id="dlTitle"></h2>
+        <div class="dl-main" id="dlMain"></div>
+        <div id="dlExtra"></div>
+      </section>
+
+      <!-- Phone visitors -->
+      <section id="mobile" class="mobile" aria-labelledby="mobileTitle" hidden>
+        <h2 id="mobileTitle" data-i18n="m_title"></h2>
+        <p data-i18n="m_text"></p>
+        <p data-i18n="m_touch"></p>
+        <div class="actions">
+          <a class="btn primary" href="./touch-test/" data-i18n="m_touch_btn"></a>
+          <button id="shareBtn" class="btn" type="button" data-i18n="m_share"></button>
+        </div>
+        <p id="shareMsg" aria-live="polite"></p>
+      </section>
+
+      <section class="others" aria-labelledby="othersTitle">
+        <h2 id="othersTitle" data-i18n="others_title"></h2>
+        <div class="osgrid">
+          <div class="osbox">
+            <h3>Windows</h3>
+            <ul>
+              <li><a data-asset="win-exe" href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Windows-Instalador.exe"><span data-i18n="a_win_exe"></span></a> <span class="ext">.exe</span></li>
+              <li><a data-asset="win-zip" href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Windows-Portatil.zip"><span data-i18n="a_win_zip"></span></a> <span class="ext">.zip</span></li>
+            </ul>
+          </div>
+          <div class="osbox">
+            <h3>Mac</h3>
+            <ul>
+              <li><a data-asset="mac-arm" href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Mac-AppleSilicon.dmg"><span data-i18n="a_mac_arm"></span></a> <span class="ext">.dmg</span></li>
+              <li><a data-asset="mac-intel" href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Mac-Intel.dmg"><span data-i18n="a_mac_intel"></span></a> <span class="ext">.dmg</span></li>
+            </ul>
+          </div>
+          <div class="osbox">
+            <h3>Linux</h3>
+            <ul>
+              <li><a data-asset="linux-appimage" href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Linux.AppImage">AppImage</a> <span class="ext" data-i18n="a_linux_any"></span></li>
+              <li><a data-asset="linux-deb" href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Linux.deb"><span data-i18n="a_linux_deb"></span></a> <span class="ext">.deb</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ================= Install ================= -->
+    <section class="block" id="instalar" aria-labelledby="installTitle">
+      <h2 id="installTitle" data-i18n="inst_title"></h2>
+      <p class="intro" data-i18n="inst_intro"></p>
+
+      <div class="tabs" role="tablist" aria-labelledby="installTitle">
+        <button type="button" role="tab" id="tab-windows" aria-controls="panel-windows" data-os-tab="windows">Windows</button>
+        <button type="button" role="tab" id="tab-mac" aria-controls="panel-mac" data-os-tab="mac">Mac</button>
+        <button type="button" role="tab" id="tab-linux" aria-controls="panel-linux" data-os-tab="linux">Linux</button>
+      </div>
+
+      <!-- Windows -->
+      <div class="panel" role="tabpanel" id="panel-windows" aria-labelledby="tab-windows" tabindex="0">
+        <ol class="steps">
+          <li>
+            <h3 data-i18n="w1_t"></h3>
+            <p data-i18n-html="w1_p"></p>
+            <p><a class="btn" href="https://apps.microsoft.com/detail/9np83lwlpz9k" target="_blank" rel="noopener" data-i18n="w1_btn"></a></p>
+            <p class="hint" data-i18n="w1_hint"></p>
+          </li>
+          <li>
+            <h3 data-i18n="w2_t"></h3>
+            <p data-i18n-html="w2_p"></p>
+            <div class="inline-btns">
+              <a class="btn primary" href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Windows-Instalador.exe" data-i18n="w2_btn_exe"></a>
+              <a class="btn" href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Windows-Portatil.zip" data-i18n="w2_btn_zip"></a>
+            </div>
+            <details class="more">
+              <summary data-i18n="w2_zip_sum"></summary>
+              <div><p data-i18n-html="w2_zip_p"></p></div>
+            </details>
+            <details class="more">
+              <summary data-i18n="w2_browser_sum"></summary>
+              <div><p data-i18n-html="w2_browser_p"></p></div>
+            </details>
+          </li>
+          <li>
+            <h3 data-i18n="w3_t"></h3>
+            <p data-i18n-html="w3_p"></p>
+            <div class="mocks">
+              <div class="mock ss" role="img" data-i18n-aria="mock_ss1_alt">
+                <span class="tag" aria-hidden="true">1</span>
+                <p class="t" data-i18n="ss_title"></p>
+                <p class="d" data-i18n="ss_text"></p>
+                <span class="lnk ring" data-i18n="ss_more"></span>
+                <div class="row"><span class="b" data-i18n="ss_dont"></span></div>
+              </div>
+              <div class="mock ss" role="img" data-i18n-aria="mock_ss2_alt">
+                <span class="tag" aria-hidden="true">2</span>
+                <p class="t" data-i18n="ss_title"></p>
+                <p class="d" data-i18n="ss_text"></p>
+                <p class="kv"><span data-i18n="ss_app"></span> Lacre-Windows-Instalador.exe</p>
+                <p class="kv" data-i18n="ss_pub"></p>
+                <div class="row"><span class="b ring" data-i18n="ss_run"></span><span class="b" data-i18n="ss_dont"></span></div>
+              </div>
+            </div>
+            <p class="why" data-i18n-html="w3_why"></p>
+            <div class="case">
+              <p class="lbl" data-i18n="w3b_t"></p>
+              <p data-i18n="w3b_p"></p>
+              <ul>
+                <li data-i18n-html="w3b_sac"></li>
+                <li data-i18n-html="w3b_def"></li>
+              </ul>
+              <p class="lbl" data-i18n="w3b_do"></p>
+              <ul>
+                <li data-i18n-html="w3b_zip"></li>
+                <li data-i18n-html="w3b_check"></li>
+                <li data-i18n-html="w3b_off"></li>
+                <li data-i18n-html="w3b_av"></li>
+                <li data-i18n-html="w3b_org"></li>
+              </ul>
+              <p class="hint" data-i18n="w3b_signed"></p>
+            </div>
+          </li>
+          <li>
+            <h3 data-i18n="w4_t"></h3>
+            <p data-i18n-html="w4_p"></p>
+          </li>
+        </ol>
+      </div>
+
+      <!-- Mac -->
+      <div class="panel" role="tabpanel" id="panel-mac" aria-labelledby="tab-mac" tabindex="0" hidden>
+        <ol class="steps">
+          <li>
+            <h3 data-i18n="k1_t"></h3>
+            <p data-i18n-html="k1_p"></p>
+            <div class="inline-btns" id="macTabBtns">
+              <a class="btn primary" id="macTabArm" href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Mac-AppleSilicon.dmg" data-i18n="a_mac_arm"></a>
+              <a class="btn" id="macTabIntel" href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Mac-Intel.dmg" data-i18n="a_mac_intel"></a>
+            </div>
+            <p class="hint" data-i18n-html="which_how"></p>
+          </li>
+          <li>
+            <h3 data-i18n="k2_t"></h3>
+            <p data-i18n-html="k2_p"></p>
+          </li>
+          <li>
+            <h3 data-i18n="k3_t"></h3>
+            <p data-i18n="k3_intro"></p>
+            <div class="case">
+            <p class="lbl" data-i18n="k3a_t"></p>
+            <p data-i18n-html="k3_p"></p>
+            <div class="mocks">
+              <div class="mock mac" role="img" data-i18n-aria="mock_mac1_alt">
+                <span class="tag" aria-hidden="true">1</span>
+                <div class="alert">
+                  <p class="t" data-i18n="mac_alert_t"></p>
+                  <p class="d" data-i18n="mac_alert_d"></p>
+                  <div class="col"><span class="mb blue ring" data-i18n="mac_done"></span><span class="mb" data-i18n="mac_trash"></span></div>
+                </div>
+              </div>
+              <div class="mock mac" role="img" data-i18n-aria="mock_mac2_alt">
+                <span class="tag" aria-hidden="true">2</span>
+                <div class="bar"><i></i><i></i><i></i><span data-i18n="mac_pane"></span></div>
+                <div class="body">
+                  <p class="sec" data-i18n="mac_security"></p>
+                  <div class="box"><p data-i18n="mac_blocked"></p><span class="mb ring" data-i18n="mac_open_anyway"></span></div>
+                </div>
+              </div>
+            </div>
+            </div>
+            <div class="case">
+              <p class="lbl" data-i18n="k3b_t"></p>
+              <p data-i18n-html="k3b_p1"></p>
+              <p data-i18n-html="k3b_p2"></p>
+              <div class="cmd">
+                <code id="xattrCmd">xattr -cr /Applications/Lacre.app</code>
+                <button type="button" class="btn" id="copyBtn" data-i18n="copy_btn"></button>
+              </div>
+              <p class="copymsg" id="copyMsg" aria-live="polite"></p>
+              <p class="hint" data-i18n="k3b_hint"></p>
+            </div>
+            <p class="why" data-i18n-html="k3_why"></p>
+          </li>
+          <li>
+            <h3 data-i18n="k4_t"></h3>
+            <p data-i18n-html="k4_p"></p>
+          </li>
+        </ol>
+      </div>
+
+      <!-- Linux -->
+      <div class="panel" role="tabpanel" id="panel-linux" aria-labelledby="tab-linux" tabindex="0" hidden>
+        <ol class="steps">
+          <li>
+            <h3 data-i18n="l1_t"></h3>
+            <p data-i18n-html="l1_p"></p>
+            <div class="inline-btns">
+              <a class="btn primary" href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Linux.AppImage" data-i18n="l1_btn_app"></a>
+              <a class="btn" href="https://github.com/dosxnjos/lacre/releases/latest/download/Lacre-Linux.deb" data-i18n="l1_btn_deb"></a>
+            </div>
+          </li>
+          <li>
+            <h3 data-i18n="l2_t"></h3>
+            <p data-i18n-html="l2_p"></p>
+            <p class="hint" data-i18n-html="l2_fuse"></p>
+          </li>
+          <li>
+            <h3 data-i18n="l3_t"></h3>
+            <p data-i18n-html="l3_p"></p>
+          </li>
+          <li>
+            <h3 data-i18n="l4_t"></h3>
+            <p data-i18n-html="l4_p"></p>
+          </li>
+        </ol>
+      </div>
+
+      <div class="connect">
+        <div>
+          <h3 data-i18n="c_title"></h3>
+          <ul>
+            <li data-i18n-html="c_1"></li>
+            <li data-i18n-html="c_2"></li>
+            <li data-i18n-html="c_3"></li>
+            <li data-i18n-html="c_4"></li>
+          </ul>
+        </div>
+        <div class="mock ios" role="img" data-i18n-aria="mock_ios_alt">
+          <div class="in">
+            <p class="t" data-i18n="ios_t"></p>
+            <p class="d" data-i18n="ios_d"></p>
+          </div>
+          <div class="row"><span class="ring" data-i18n="ios_trust"></span><span data-i18n="ios_dont"></span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= What it checks ================= -->
+    <section class="block" id="confere" aria-labelledby="checksTitle">
+      <h2 id="checksTitle" data-i18n="chk_title"></h2>
+      <p class="intro" data-i18n="chk_intro"></p>
+      <div class="cards">
+        <article class="card">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+          <h3 data-i18n="chk1_t"></h3><p data-i18n="chk1_p"></p>
+        </article>
+        <article class="card">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <h3 data-i18n="chk2_t"></h3><p data-i18n="chk2_p"></p>
+        </article>
+        <article class="card">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 3v4M8 3v4M4 11h16"/></svg></div>
+          <h3 data-i18n="chk3_t"></h3><p data-i18n="chk3_p"></p>
+        </article>
+        <article class="card">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/><path d="M7 10v4M11 10v4"/></svg></div>
+          <h3 data-i18n="chk4_t"></h3><p data-i18n="chk4_p"></p>
+        </article>
+        <article class="card">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg></div>
+          <h3 data-i18n="chk5_t"></h3><p data-i18n="chk5_p"></p>
+        </article>
+        <article class="card">
+          <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/><circle cx="12" cy="10" r="2.5"/></svg></div>
+          <h3 data-i18n="chk6_t"></h3><p data-i18n-html="chk6_p"></p>
+        </article>
+      </div>
+      <p class="howlong" data-i18n="chk_time"></p>
+    </section>
+
+    <!-- ================= Privacy ================= -->
+    <section class="block" id="privacidade" aria-labelledby="privTitle">
+      <div class="note">
+        <h2 id="privTitle" data-i18n="priv_title"></h2>
+        <ul>
+          <li data-i18n-html="priv_1"></li>
+          <li data-i18n-html="priv_2"></li>
+          <li data-i18n-html="priv_3"></li>
+          <li data-i18n-html="priv_4"></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================= Limits ================= -->
+    <section class="block" id="limites" aria-labelledby="limTitle">
+      <div class="note limits">
+        <h2 id="limTitle" data-i18n="lim_title"></h2>
+        <p data-i18n="lim_p"></p>
+        <p><a href="https://github.com/dosxnjos/lacre/blob/main/docs/LIMITATIONS.md" data-i18n="lim_link"></a></p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p data-i18n-html="foot_1"></p>
+    <p data-i18n="foot_2"></p>
+  </footer>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+const REL = 'https://github.com/dosxnjos/lacre/releases/latest/download/';
+const ASSET = {
+  'win-exe': REL + 'Lacre-Windows-Instalador.exe',
+  'win-zip': REL + 'Lacre-Windows-Portatil.zip',
+  'mac-arm': REL + 'Lacre-Mac-AppleSilicon.dmg',
+  'mac-intel': REL + 'Lacre-Mac-Intel.dmg',
+  'linux-appimage': REL + 'Lacre-Linux.AppImage',
+  'linux-deb': REL + 'Lacre-Linux.deb'
+};
+
+/* ================= i18n ================= */
+const I18N = {
+pt: {
+  doc_title: 'Lacre: confira um iPhone usado antes de comprar',
+  doc_desc: 'Programa gratuito e de código aberto para Windows, Mac e Linux. Ligue o iPhone usado no computador pelo cabo e veja se ele tem trava de compra, peças trocadas e como está a bateria.',
+  skip: 'Pular para como instalar',
+  brand: 'Lacre',
+  lang_btn: 'English',
+  lang_btn_aria: 'Switch to English',
+  h1: 'Confira um iPhone usado antes de comprar',
+  lead: 'O Lacre é um programa gratuito para o computador. Você liga o iPhone pelo cabo e ele mostra, em linguagem simples, se o aparelho está preso a outra pessoa ou empresa, se tem peça trocada e como está a bateria.',
+  fact_free: 'Gratuito e de código aberto',
+  fact_local: 'Funciona sem internet',
+  fact_readonly: 'Não altera nada no iPhone',
+
+  dl_title_windows: 'Para o seu computador com Windows',
+  dl_title_mac: 'Para o seu Mac',
+  dl_title_linux: 'Para o seu computador com Linux',
+  dl_title_other: 'Escolha o sistema do seu computador',
+  btn_win: 'Baixar para Windows',
+  btn_win_sub: 'Instalador para Windows 10 e 11',
+  btn_win_zip: 'Versão portátil (.zip)',
+  btn_win_zip_sub: 'Sem instalar',
+  btn_mac_arm: 'Baixar para Mac com chip Apple',
+  btn_mac_arm_sub: 'M1, M2, M3, M4 e mais novos',
+  btn_mac_intel: 'Baixar para Mac com Intel',
+  btn_mac_intel_sub: 'Macs mais antigos',
+  btn_linux: 'Baixar para Linux',
+  btn_linux_sub: 'AppImage para PC de 64 bits com Intel ou AMD (x86-64)',
+  btn_linux_deb: 'Pacote .deb',
+  btn_linux_deb_sub: 'Ubuntu, Debian, Mint (x86-64)',
+  dl_note_win: 'Antes de abrir, instale também o app gratuito <b>Dispositivos Apple</b>, da Microsoft Store. O passo a passo está <a href="#instalar">logo abaixo</a>.',
+  dl_note_mac: 'Não precisa instalar mais nada. O passo a passo está <a href="#instalar">logo abaixo</a>.',
+  dl_note_linux: 'Pode precisar do <code>usbmuxd</code>. O passo a passo está <a href="#instalar">logo abaixo</a>.',
+  dl_note_other: 'O Lacre funciona em computadores com Windows, Mac ou Linux. Escolha abaixo.',
+  dl_title_chromeos: 'O Lacre ainda não funciona em Chromebook',
+  dl_note_chromeos: 'Ele precisa de um computador com Windows, Mac ou Linux. Abra esta página num desses computadores para baixar. Os links ficam abaixo, caso você queira enviar para outro computador.',
+  win_arm_note: '<b>Este computador parece ter processador ARM</b> (como Snapdragon). O Lacre ainda não foi testado nesse tipo de computador e pode não funcionar, porque a conexão USB depende do driver da Apple, que nem sempre funciona nele. Se não funcionar, use um computador com processador Intel ou AMD.',
+  mac_arch_arm: 'Pelo navegador, este Mac parece ter <b>chip Apple</b>. Na dúvida, confira como abaixo.',
+  mac_arch_intel: 'Pelo navegador, este Mac parece ter <b>processador Intel</b>. Na dúvida, confira como abaixo.',
+  which_how: '<b>Não sabe qual é o seu Mac?</b> Clique no menu Apple (a maçã no canto de cima, à esquerda) e depois em <b>Sobre Este Mac</b>. Se aparecer <b>Chip Apple M</b> alguma coisa, baixe o de chip Apple. Se aparecer <b>Processador Intel</b>, baixe o de Intel.',
+
+  m_title: 'O Lacre roda no computador',
+  m_text: 'A conferência é feita com o iPhone ligado pelo cabo a um computador com Windows, Mac ou Linux. Abra esta página no computador para baixar.',
+  m_touch: 'Já pelo celular, dá para fazer o teste de toque e de tela: abra a página abaixo no Safari do iPhone que você vai conferir.',
+  m_touch_btn: 'Abrir o teste de toque',
+  m_share: 'Enviar este link',
+  m_copied: 'Link copiado. Cole numa mensagem para você mesmo e abra no computador.',
+  m_copy_fail: 'Não deu para copiar. O endereço é: dosxnjos.github.io/lacre',
+
+  others_title: 'Todos os sistemas',
+  a_win_exe: 'Instalador',
+  a_win_zip: 'Portátil, sem instalar',
+  a_mac_arm: 'Mac com chip Apple (M1 ou mais novo)',
+  a_mac_intel: 'Mac com Intel',
+  a_linux_any: '(PC de 64 bits com Intel ou AMD)',
+  a_linux_deb: 'Ubuntu, Debian, Mint',
+
+  inst_title: 'Como instalar',
+  inst_intro: 'Leva poucos minutos e só precisa ser feito uma vez. Escolha o sistema do seu computador.',
+
+  w1_t: 'Instale o app Dispositivos Apple',
+  w1_p: 'É um app gratuito da própria Apple, na Microsoft Store. É ele que deixa o Windows conversar com o iPhone pelo cabo. Se você já tem o <b>iTunes</b> instalado, pode pular este passo.',
+  w1_btn: 'Abrir na Microsoft Store',
+  w1_hint: 'Se o Lacre não encontrar esse app, ele avisa e mostra o que fazer.',
+  w2_t: 'Baixe e abra o Lacre',
+  w2_p: 'Clique em <b>Baixar o instalador</b>, espere terminar e abra o arquivo que baixou (ele aparece no canto do navegador ou na pasta <b>Downloads</b>). Siga o instalador até o fim.',
+  w2_btn_exe: 'Baixar o instalador',
+  w2_btn_zip: 'Baixar a versão portátil',
+  w2_zip_sum: 'Prefere não instalar? Use a versão portátil',
+  w2_zip_p: 'Baixe o arquivo <b>.zip</b>, clique nele com o botão direito e escolha <b>Extrair tudo</b>. Abra a pasta que foi criada e dê dois cliques em <b>Lacre.exe</b>. Deixe o Lacre.exe dentro dessa pasta: ele precisa dos outros arquivos que estão junto.',
+  w2_browser_sum: 'O navegador disse que o arquivo “não é baixado com frequência”?',
+  w2_browser_p: 'No Edge, passe o mouse sobre o aviso na lista de downloads, clique nos três pontinhos (<b>...</b>) e em <b>Manter</b>. Na janela que abrir, clique em <b>Mostrar mais</b> e depois em <b>Manter mesmo assim</b>. No Chrome, clique em <b>Manter</b>. O aviso aparece porque o Lacre é novo e ainda pouca gente baixou.',
+  w3_t: 'Se aparecer a tela azul “O Windows protegeu o computador”',
+  w3_p: 'Clique em <b>Mais informações</b> e depois em <b>Executar assim mesmo</b>. Isso só acontece na primeira vez.',
+  w3_why: '<b>Por que esse aviso aparece?</b> O Lacre é gratuito e ainda não tem a assinatura digital paga que a Microsoft usa para reconhecer quem fez o programa. O aviso não quer dizer que encontraram problema nele. O código é aberto e qualquer pessoa pode conferir.',
+  w3b_t: 'E se não aparecer o botão “Executar assim mesmo”?',
+  w3b_p: 'Em alguns computadores o Windows bloqueia o Lacre sem dar a opção de abrir. Isso costuma ter um destes dois motivos:',
+  w3b_sac: '<b>Controle Inteligente de Aplicativos.</b> Vem ligado em alguns computadores novos com Windows 11 e bloqueia todo programa sem assinatura digital, como o Lacre por enquanto.',
+  w3b_def: '<b>Microsoft Defender.</b> O antivírus do Windows às vezes trata um programa novo e sem assinatura como ameaça. Isso acontece com frequência com programas feitos em Python, como o Lacre.',
+  w3b_do: 'O que dá para fazer:',
+  w3b_zip: 'Tente a <b>versão portátil (.zip)</b>, no passo 2. Ela pode ser bloqueada do mesmo jeito, mas vale tentar.',
+  w3b_check: 'Para saber se o bloqueio vem do Controle Inteligente de Aplicativos, abra <b>Segurança do Windows</b> &gt; <b>Controle de aplicativos e do navegador</b> &gt; <b>Configurações do Controle Inteligente de Aplicativos</b>. Se estiver <b>Ativado</b>, o Lacre não abre neste computador.',
+  w3b_off: 'Desligar o Controle Inteligente de Aplicativos é decisão sua. Saiba antes que, no Windows 11, depois de desligado ele não pode ser ligado de novo sem reinstalar o Windows. Se preferir não mexer nisso, use o Lacre em outro computador.',
+  w3b_av: 'Se foi o Microsoft Defender, não desligue o antivírus. Liberar o Lacre em <b>Segurança do Windows</b> &gt; <b>Proteção contra vírus e ameaças</b> &gt; <b>Histórico de proteção</b> também é decisão sua. O código é aberto para quem quiser conferir antes.',
+  w3b_org: 'Em computador de empresa ou de escola, o bloqueio pode vir do responsável pela rede. Nesse caso, use outro computador.',
+  w3b_signed: 'Uma versão com assinatura digital, que deve acabar com esses bloqueios, está nos planos.',
+  w4_t: 'Conecte o iPhone',
+  w4_p: 'Ligue o iPhone no computador com o cabo, desbloqueie a tela e toque em <b>Confiar</b>. Depois é só seguir o que o Lacre mostra na tela.',
+
+  k1_t: 'Baixe a versão certa para o seu Mac',
+  k1_p: 'Existem duas versões: uma para Mac com chip Apple e outra para Mac com Intel.',
+  k2_t: 'Abra o arquivo e arraste o Lacre para Aplicativos',
+  k2_p: 'Dê dois cliques no arquivo <b>.dmg</b> que baixou. Na janela que abrir, arraste o ícone do <b>Lacre</b> para a pasta <b>Aplicativos</b>. Depois abra o Lacre pela pasta Aplicativos ou pelo Launchpad.',
+  k3_t: 'Na primeira vez, o Mac bloqueia a abertura',
+  k3_intro: 'O aviso pode vir de dois jeitos. Veja qual apareceu para você.',
+  k3a_t: 'Se o aviso diz que o Lacre “não foi aberto” ou “não pode ser aberto”',
+  k3_p: 'Clique em <b>OK</b> ou <b>Cancelar</b> (nunca em Mover para o Lixo). Depois abra <b>Ajustes do Sistema</b>, vá em <b>Privacidade e Segurança</b>, desça até o fim e clique em <b>Abrir Mesmo Assim</b> ao lado do nome do Lacre. Digite a senha do Mac. Quando o aviso aparecer de novo, clique mais uma vez em <b>Abrir Mesmo Assim</b>. Isso só acontece na primeira vez.',
+  k3b_t: 'Se o aviso diz que o Lacre “está danificado”',
+  k3b_p1: 'A mensagem completa é: <i>“Lacre” está danificado e não pode ser aberto. Você deve movê-lo para o Lixo.</i> Na maioria das vezes o arquivo não estragou. O Mac põe uma marca em tudo o que vem da internet e, em algumas versões, mostra essa mensagem para programas que a Apple ainda não verificou. Nesse caso o caminho por Ajustes do Sistema não aparece.',
+  k3b_p2: 'Clique em <b>Cancelar</b> ou <b>OK</b> (nunca em Mover para o Lixo). Abra o app <b>Terminal</b> (procure por Terminal no Spotlight, a lupa no canto de cima), cole a linha abaixo, aperte Enter e abra o Lacre de novo. Ela tira essa marca só do Lacre e não muda mais nada no Mac.',
+  k3b_hint: 'Use só se aparecer essa mensagem e depois de arrastar o Lacre para Aplicativos. Se mesmo assim não abrir, baixe o arquivo de novo.',
+  copy_btn: 'Copiar',
+  copy_ok: 'Copiado. Agora cole no Terminal e aperte Enter.',
+  copy_fail: 'Não deu para copiar sozinho. A linha ficou selecionada: aperte Command e C para copiar.',
+  k3_why: '<b>Por que esse aviso aparece?</b> O Lacre é gratuito e ainda não passou pela verificação paga da Apple para programas fora da App Store. O aviso não quer dizer que encontraram problema nele. O código é aberto e qualquer pessoa pode conferir.',
+  k4_t: 'Conecte o iPhone',
+  k4_p: 'No Mac não precisa instalar mais nada. Ligue o iPhone com o cabo, desbloqueie a tela e toque em <b>Confiar</b>. Se o Mac perguntar se quer permitir que o acessório se conecte, clique em <b>Permitir</b>.',
+
+  l1_t: 'Baixe o AppImage ou o pacote .deb',
+  l1_p: 'O <b>AppImage</b> funciona na maioria das distribuições e não precisa instalar. O <b>.deb</b> é para Ubuntu, Debian, Mint e parecidos. Os dois são para PC de 64 bits com processador Intel ou AMD (x86-64).',
+  l1_btn_app: 'Baixar o AppImage',
+  l1_btn_deb: 'Baixar o .deb',
+  l2_t: 'AppImage: permita que ele seja executado',
+  l2_p: 'Clique com o botão direito no arquivo e vá em <b>Propriedades</b>. Na aba <b>Permissões</b>, marque <b>Permitir executar o arquivo como um programa</b>. Nas versões mais novas do GNOME, como a do Ubuntu 24.04, ligue a opção <b>Executável como programa</b>, que fica direto em Propriedades. Depois é só dar dois cliques. Pelo terminal:<br><code>chmod +x Lacre-Linux.AppImage</code><br><code>./Lacre-Linux.AppImage</code>',
+  l2_fuse: 'Se o AppImage não abrir no Ubuntu 22.04 ou mais novo, instale o FUSE: <code>sudo apt install libfuse2</code> (no 24.04: <code>libfuse2t64</code>).',
+  l3_t: 'Ou instale o pacote .deb',
+  l3_p: 'Dê dois cliques no arquivo para abrir na central de programas, ou use o terminal na pasta onde ele foi baixado:<br><code>sudo apt install ./Lacre-Linux.deb</code>',
+  l4_t: 'Conecte o iPhone',
+  l4_p: 'Ligue o iPhone com o cabo, desbloqueie a tela e toque em <b>Confiar</b>. Se o Lacre não encontrar o iPhone, instale o serviço que faz a conexão USB e tente de novo:<br><code>sudo apt install usbmuxd</code>',
+
+  c_title: 'Na hora de conectar o iPhone',
+  c_1: 'Use um cabo que <b>transmite dados</b>. Alguns cabos baratos só carregam.',
+  c_2: 'Desbloqueie o iPhone e toque em <b>Confiar</b>. Depois digite o código do aparelho.',
+  c_3: 'Se o vendedor não quiser passar o código, peça para ele mesmo digitar.',
+  c_4: 'Em computador de mesa, prefira as portas USB de trás.',
+  ios_t: 'Confiar Neste Computador?',
+  ios_d: 'Seus ajustes e dados poderão ser acessados por este computador quando estiver conectado.',
+  ios_trust: 'Confiar',
+  ios_dont: 'Não Confiar',
+
+  ss_title: 'O Windows protegeu o computador',
+  ss_text: 'O Microsoft Defender SmartScreen impediu a inicialização de um aplicativo não reconhecido. A execução desse aplicativo pode colocar seu PC em risco.',
+  ss_more: 'Mais informações',
+  ss_app: 'Aplicativo:',
+  ss_pub: 'Editor: Editor desconhecido',
+  ss_run: 'Executar assim mesmo',
+  ss_dont: 'Não executar',
+  mock_ss1_alt: 'Desenho da tela azul do Windows com o título O Windows protegeu o computador. O link Mais informações está destacado.',
+  mock_ss2_alt: 'Desenho da mesma tela depois de clicar em Mais informações. O botão Executar assim mesmo está destacado.',
+  mac_alert_t: '“Lacre” não foi aberto',
+  mac_alert_d: 'A Apple não pôde verificar se “Lacre” está livre de malware que pode danificar o Mac ou comprometer a sua privacidade.',
+  mac_done: 'OK',
+  mac_trash: 'Mover para o Lixo',
+  mac_pane: 'Privacidade e Segurança',
+  mac_security: 'Segurança',
+  mac_blocked: '“Lacre” foi bloqueado para proteger o seu Mac.',
+  mac_open_anyway: 'Abrir Mesmo Assim',
+  mock_mac1_alt: 'Desenho do aviso do Mac dizendo que o Lacre não foi aberto. O botão OK está destacado.',
+  mock_mac2_alt: 'Desenho dos Ajustes do Sistema, em Privacidade e Segurança. O botão Abrir Mesmo Assim está destacado.',
+  mock_ios_alt: 'Desenho do aviso do iPhone perguntando se quer confiar neste computador. O botão Confiar está destacado.',
+
+  chk_title: 'O que o Lacre confere',
+  chk_intro: 'Tudo é lido do próprio iPhone, pelo cabo, sem mexer em nada nele.',
+  chk1_t: 'Travas de compra',
+  chk1_p: 'Se o Buscar iPhone ainda está ligado (o aparelho fica preso à conta de outra pessoa) e se o iPhone é gerenciado por uma empresa (MDM). Também mostra perfis instalados e se é um aparelho de vitrine ou recondicionado.',
+  chk2_t: 'Registro de fábrica da Apple',
+  chk2_p: 'Com um diagnóstico que você aciona apertando os botões do iPhone, o Lacre lê o registro que a Apple gravou na fábrica e confere se as peças instaladas ainda são as mesmas.',
+  chk3_t: 'Datas das peças',
+  chk3_p: 'Compara a data de fabricação das câmeras, da tela, do Face ID e da bateria com a data em que o iPhone foi montado. Peça bem mais nova que o aparelho pode ter sido trocada.',
+  chk4_t: 'Saúde da bateria',
+  chk4_p: 'A porcentagem oficial de saúde, quantos ciclos de carga ela já fez, a capacidade estimada e a idade da bateria comparada com a do aparelho.',
+  chk5_t: 'Checklist de 30 itens',
+  chk5_p: 'Um roteiro guiado do que só dá para testar com as mãos: IMEI, câmeras, microfones, alto-falantes, Face ID, botões, Wi-Fi, Bluetooth, carregamento e sinais de que o aparelho foi aberto.',
+  chk6_t: 'Teste de toque e tela',
+  chk6_p: 'Uma página que você abre no Safari do próprio iPhone para achar pontos que não respondem, toque fantasma e defeitos na tela. <a href="./touch-test/">Abrir o teste de toque</a>.',
+  chk_time: 'A leitura leva cerca de 40 segundos. A conferência de fábrica é opcional, mas recomendada, e leva de 5 a 10 minutos.',
+
+  priv_title: 'Privacidade',
+  priv_1: 'Roda <b>inteiro no seu computador</b>. Nada é enviado para lugar nenhum: sem conta, sem servidor, sem coleta de uso.',
+  priv_2: 'O Lacre <b>só lê</b>. Ele não instala nada no iPhone, não apaga dados e não muda ajustes.',
+  priv_3: 'O diagnóstico usado na conferência de fábrica é <b>apagado do iPhone e do computador</b> no fim. Ao apertar os botões, o iPhone salva uma captura de tela em Fotos: avise o vendedor ou apague a foto.',
+  priv_4: 'O relatório que você exportar tem o número de série e o IMEI do aparelho. Guarde com cuidado.',
+  lim_title: 'Até onde ele vai',
+  lim_p: 'Resultado verde quer dizer que o Lacre não achou problema no que ele consegue ler. Não prova que o aparelho nunca foi aberto. Antes de confiar no resultado, leia a lista do que ele não consegue ver.',
+  lim_link: 'Ler os limites do Lacre (em inglês)',
+
+  foot_1: 'Código aberto, licença MIT. <a href="https://github.com/dosxnjos/lacre">Ver o código no GitHub</a>.',
+  foot_2: 'O Lacre não tem ligação com a Apple. iPhone é marca registrada da Apple Inc.'
+},
+en: {
+  doc_title: 'Seal Check: check a used iPhone before you buy it',
+  doc_desc: 'A free, open-source app for Windows, Mac and Linux. Plug the used iPhone into your computer and see if it is locked, has replaced parts, and how the battery is doing.',
+  skip: 'Skip to installation',
+  brand: 'Seal Check',
+  lang_btn: 'Português',
+  lang_btn_aria: 'Mudar para português',
+  h1: 'Check a used iPhone before you buy it',
+  lead: 'Seal Check (Lacre) is a free app for your computer. Plug the iPhone in with a cable and it tells you, in plain language, whether the phone is tied to another person or a company, whether parts were replaced, and how the battery is doing.',
+  fact_free: 'Free and open source',
+  fact_local: 'Works offline',
+  fact_readonly: 'Changes nothing on the iPhone',
+
+  dl_title_windows: 'For your Windows computer',
+  dl_title_mac: 'For your Mac',
+  dl_title_linux: 'For your Linux computer',
+  dl_title_other: 'Choose your computer’s system',
+  btn_win: 'Download for Windows',
+  btn_win_sub: 'Installer for Windows 10 and 11',
+  btn_win_zip: 'Portable version (.zip)',
+  btn_win_zip_sub: 'No installation',
+  btn_mac_arm: 'Download for Mac with Apple chip',
+  btn_mac_arm_sub: 'M1, M2, M3, M4 and newer',
+  btn_mac_intel: 'Download for Intel Mac',
+  btn_mac_intel_sub: 'Older Macs',
+  btn_linux: 'Download for Linux',
+  btn_linux_sub: 'AppImage for 64-bit Intel or AMD PCs (x86-64)',
+  btn_linux_deb: '.deb package',
+  btn_linux_deb_sub: 'Ubuntu, Debian, Mint (x86-64)',
+  dl_note_win: 'Before opening it, also install Apple’s free <b>Apple Devices</b> app from the Microsoft Store. The steps are <a href="#instalar">just below</a>.',
+  dl_note_mac: 'Nothing else to install. The steps are <a href="#instalar">just below</a>.',
+  dl_note_linux: 'You may need <code>usbmuxd</code>. The steps are <a href="#instalar">just below</a>.',
+  dl_note_other: 'Seal Check runs on Windows, Mac and Linux computers. Choose below.',
+  dl_title_chromeos: 'Seal Check does not work on Chromebooks yet',
+  dl_note_chromeos: 'It needs a Windows, Mac or Linux computer. Open this page on one of those to download it. The links are below in case you want to send them to another computer.',
+  win_arm_note: '<b>This computer looks like it has an ARM processor</b> (such as Snapdragon). Seal Check has not been tested on this kind of computer and may not work, because the USB connection depends on Apple’s driver, which does not always work there. If it does not work, use a computer with an Intel or AMD processor.',
+  mac_arch_arm: 'From the browser, this Mac looks like it has an <b>Apple chip</b>. If unsure, see how to check below.',
+  mac_arch_intel: 'From the browser, this Mac looks like it has an <b>Intel processor</b>. If unsure, see how to check below.',
+  which_how: '<b>Not sure which Mac you have?</b> Click the Apple menu (the apple in the top left corner), then <b>About This Mac</b>. If it says <b>Chip Apple M</b> something, get the Apple chip version. If it says <b>Processor Intel</b>, get the Intel version.',
+
+  m_title: 'Seal Check runs on a computer',
+  m_text: 'The check is done with the iPhone connected by cable to a Windows, Mac or Linux computer. Open this page on the computer to download it.',
+  m_touch: 'From your phone you can already run the touch and screen test: open the page below in Safari on the iPhone you are checking.',
+  m_touch_btn: 'Open the touch test',
+  m_share: 'Send this link',
+  m_copied: 'Link copied. Paste it in a message to yourself and open it on the computer.',
+  m_copy_fail: 'Could not copy. The address is: dosxnjos.github.io/lacre',
+
+  others_title: 'All systems',
+  a_win_exe: 'Installer',
+  a_win_zip: 'Portable, no installation',
+  a_mac_arm: 'Mac with Apple chip (M1 or newer)',
+  a_mac_intel: 'Intel Mac',
+  a_linux_any: '(64-bit Intel or AMD PC)',
+  a_linux_deb: 'Ubuntu, Debian, Mint',
+
+  inst_title: 'How to install',
+  inst_intro: 'It takes a few minutes and you only do it once. Choose your computer’s system.',
+
+  w1_t: 'Install the Apple Devices app',
+  w1_p: 'It is a free app from Apple, in the Microsoft Store. It lets Windows talk to the iPhone over the cable. If you already have <b>iTunes</b> installed, you can skip this step.',
+  w1_btn: 'Open in the Microsoft Store',
+  w1_hint: 'If Seal Check cannot find that app, it tells you and shows what to do.',
+  w2_t: 'Download and open Seal Check',
+  w2_p: 'Click <b>Download the installer</b>, wait for it to finish and open the file (it shows up in the corner of the browser or in your <b>Downloads</b> folder). Follow the installer to the end.',
+  w2_btn_exe: 'Download the installer',
+  w2_btn_zip: 'Download the portable version',
+  w2_zip_sum: 'Rather not install? Use the portable version',
+  w2_zip_p: 'Download the <b>.zip</b> file, right-click it and choose <b>Extract All</b>. Open the folder it creates and double-click <b>Lacre.exe</b>. Keep Lacre.exe inside that folder: it needs the other files next to it.',
+  w2_browser_sum: 'Did the browser say the file “isn’t commonly downloaded”?',
+  w2_browser_p: 'In Edge, hover over the warning in the downloads list, click the three dots (<b>...</b>) and <b>Keep</b>. In the window that opens, click <b>Show more</b>, then <b>Keep anyway</b>. In Chrome, click <b>Keep</b>. The warning appears because the app is new and few people have downloaded it yet.',
+  w3_t: 'If a blue “Windows protected your PC” screen appears',
+  w3_p: 'Click <b>More info</b>, then <b>Run anyway</b>. This only happens the first time.',
+  w3_why: '<b>Why does this warning appear?</b> Seal Check is free and does not have the paid digital signature Microsoft uses to recognize who made an app yet. The warning does not mean anything wrong was found. The code is open and anyone can review it.',
+  w3b_t: 'What if there is no “Run anyway” button?',
+  w3b_p: 'On some computers Windows blocks Seal Check and offers no way to open it. There are usually two reasons:',
+  w3b_sac: '<b>Smart App Control.</b> It comes turned on in some new Windows 11 computers and blocks every app without a digital signature, which Seal Check does not have yet.',
+  w3b_def: '<b>Microsoft Defender.</b> Windows’ antivirus sometimes treats a new, unsigned app as a threat. This happens often with apps built in Python, like Seal Check.',
+  w3b_do: 'What you can do:',
+  w3b_zip: 'Try the <b>portable version (.zip)</b> from step 2. It may be blocked the same way, but it is worth a try.',
+  w3b_check: 'To see whether Smart App Control is the cause, open <b>Windows Security</b> &gt; <b>App &amp; browser control</b> &gt; <b>Smart App Control settings</b>. If it is <b>On</b>, Seal Check will not open on this computer.',
+  w3b_off: 'Turning Smart App Control off is your decision. Know first that on Windows 11, once it is off, it cannot be turned back on without reinstalling Windows. If you would rather not touch it, use Seal Check on another computer.',
+  w3b_av: 'If it was Microsoft Defender, do not turn off your antivirus. Allowing Seal Check in <b>Windows Security</b> &gt; <b>Virus &amp; threat protection</b> &gt; <b>Protection history</b> is also your decision. The code is open for anyone who wants to review it first.',
+  w3b_org: 'On a work or school computer, the block may come from whoever manages the network. In that case, use another computer.',
+  w3b_signed: 'A digitally signed version, which should end these blocks, is planned.',
+  w4_t: 'Connect the iPhone',
+  w4_p: 'Plug the iPhone into the computer with the cable, unlock the screen and tap <b>Trust</b>. Then follow what Seal Check shows on screen.',
+
+  k1_t: 'Download the right version for your Mac',
+  k1_p: 'There are two versions: one for Macs with an Apple chip and one for Intel Macs.',
+  k2_t: 'Open the file and drag Lacre to Applications',
+  k2_p: 'Double-click the <b>.dmg</b> file you downloaded. In the window that opens, drag the <b>Lacre</b> icon onto the <b>Applications</b> folder. Then open Lacre from Applications or Launchpad.',
+  k3_t: 'The first time, the Mac blocks it',
+  k3_intro: 'The message can take two forms. Check which one you got.',
+  k3a_t: 'If the message says Lacre was “not opened” or “cannot be opened”',
+  k3_p: 'Click <b>Done</b> or <b>Cancel</b> (never Move to Trash). Then open <b>System Settings</b>, go to <b>Privacy &amp; Security</b>, scroll to the bottom and click <b>Open Anyway</b> next to Lacre. Enter your Mac password. When the message shows up again, click <b>Open Anyway</b> once more. This only happens the first time.',
+  k3b_t: 'If the message says Lacre “is damaged”',
+  k3b_p1: 'The full message is: <i>“Lacre” is damaged and can’t be opened. You should move it to the Trash.</i> Most of the time the file is fine. The Mac puts a mark on everything that comes from the internet and, on some versions, shows this message for apps Apple has not checked yet. In that case the System Settings route does not appear.',
+  k3b_p2: 'Click <b>Cancel</b> or <b>Done</b> (never Move to Trash). Open the <b>Terminal</b> app (search for Terminal in Spotlight, the magnifying glass at the top of the screen), paste the line below, press Return and open Lacre again. It removes that mark from Lacre only and changes nothing else on the Mac.',
+  k3b_hint: 'Use it only if you see this message, and after dragging Lacre to Applications. If it still does not open, download the file again.',
+  copy_btn: 'Copy',
+  copy_ok: 'Copied. Now paste it in Terminal and press Return.',
+  copy_fail: 'Could not copy it automatically. The line is selected: press Command and C to copy it.',
+  k3_why: '<b>Why does this warning appear?</b> Seal Check is free and has not gone through Apple’s paid check for apps outside the App Store yet. The warning does not mean anything wrong was found. The code is open and anyone can review it.',
+  k4_t: 'Connect the iPhone',
+  k4_p: 'Nothing else to install on a Mac. Plug the iPhone in with the cable, unlock the screen and tap <b>Trust</b>. If the Mac asks whether to allow the accessory to connect, click <b>Allow</b>.',
+
+  l1_t: 'Download the AppImage or the .deb package',
+  l1_p: 'The <b>AppImage</b> works on most distributions and needs no installation. The <b>.deb</b> is for Ubuntu, Debian, Mint and similar. Both are for 64-bit PCs with an Intel or AMD processor (x86-64).',
+  l1_btn_app: 'Download the AppImage',
+  l1_btn_deb: 'Download the .deb',
+  l2_t: 'AppImage: allow it to run',
+  l2_p: 'Right-click the file and go to <b>Properties</b>. In the <b>Permissions</b> tab, tick <b>Allow executing file as program</b>. On newer GNOME versions, such as the one in Ubuntu 24.04, turn on <b>Executable as Program</b>, right in Properties. Then double-click it. From a terminal:<br><code>chmod +x Lacre-Linux.AppImage</code><br><code>./Lacre-Linux.AppImage</code>',
+  l2_fuse: 'If the AppImage does not open on Ubuntu 22.04 or newer, install FUSE: <code>sudo apt install libfuse2</code> (on 24.04: <code>libfuse2t64</code>).',
+  l3_t: 'Or install the .deb package',
+  l3_p: 'Double-click the file to open it in your software center, or use a terminal in the folder where it was downloaded:<br><code>sudo apt install ./Lacre-Linux.deb</code>',
+  l4_t: 'Connect the iPhone',
+  l4_p: 'Plug the iPhone in with the cable, unlock the screen and tap <b>Trust</b>. If Seal Check cannot find the iPhone, install the service that handles the USB connection and try again:<br><code>sudo apt install usbmuxd</code>',
+
+  c_title: 'When you connect the iPhone',
+  c_1: 'Use a cable that <b>carries data</b>. Some cheap cables only charge.',
+  c_2: 'Unlock the iPhone and tap <b>Trust</b>. Then enter the phone’s passcode.',
+  c_3: 'If the seller will not share the passcode, ask them to type it in.',
+  c_4: 'On a desktop computer, prefer the USB ports on the back.',
+  ios_t: 'Trust This Computer?',
+  ios_d: 'Your settings and data will be accessible from this computer when connected.',
+  ios_trust: 'Trust',
+  ios_dont: 'Don’t Trust',
+
+  ss_title: 'Windows protected your PC',
+  ss_text: 'Microsoft Defender SmartScreen prevented an unrecognized app from starting. Running this app might put your PC at risk.',
+  ss_more: 'More info',
+  ss_app: 'App:',
+  ss_pub: 'Publisher: Unknown publisher',
+  ss_run: 'Run anyway',
+  ss_dont: 'Don’t run',
+  mock_ss1_alt: 'Drawing of the blue Windows screen titled Windows protected your PC. The More info link is highlighted.',
+  mock_ss2_alt: 'Drawing of the same screen after clicking More info. The Run anyway button is highlighted.',
+  mac_alert_t: '“Lacre” Not Opened',
+  mac_alert_d: 'Apple could not verify “Lacre” is free of malware that may harm your Mac or compromise your privacy.',
+  mac_done: 'Done',
+  mac_trash: 'Move to Trash',
+  mac_pane: 'Privacy & Security',
+  mac_security: 'Security',
+  mac_blocked: '“Lacre” was blocked to protect your Mac.',
+  mac_open_anyway: 'Open Anyway',
+  mock_mac1_alt: 'Drawing of the Mac message saying Lacre was not opened. The Done button is highlighted.',
+  mock_mac2_alt: 'Drawing of System Settings, Privacy and Security. The Open Anyway button is highlighted.',
+  mock_ios_alt: 'Drawing of the iPhone prompt asking whether to trust this computer. The Trust button is highlighted.',
+
+  chk_title: 'What Seal Check looks at',
+  chk_intro: 'Everything is read from the iPhone itself, over the cable, without changing anything on it.',
+  chk1_t: 'Purchase locks',
+  chk1_p: 'Whether Find My is still on (the phone stays tied to someone else’s account) and whether the iPhone is managed by a company (MDM). It also shows installed profiles and whether it is a demo or refurbished unit.',
+  chk2_t: 'Apple’s factory record',
+  chk2_p: 'With a diagnostic you start by pressing the iPhone’s buttons, Seal Check reads the record Apple sealed at the factory and checks whether the installed parts are still the same.',
+  chk3_t: 'Part dates',
+  chk3_p: 'Compares the manufacturing dates of the cameras, screen, Face ID and battery with the date the iPhone was assembled. A part much newer than the phone may have been replaced.',
+  chk4_t: 'Battery health',
+  chk4_p: 'The official health percentage, how many charge cycles it has, the estimated capacity, and the battery’s age compared with the phone’s.',
+  chk5_t: '30-item checklist',
+  chk5_p: 'A guided list of things only hands can test: IMEI, cameras, microphones, speakers, Face ID, buttons, Wi-Fi, Bluetooth, charging and signs the phone was opened.',
+  chk6_t: 'Touch and screen test',
+  chk6_p: 'A page you open in Safari on the iPhone itself to find dead spots, ghost touches and screen defects. <a href="./touch-test/">Open the touch test</a>.',
+  chk_time: 'The reading takes about 40 seconds. The factory check is optional but recommended, and takes 5 to 10 minutes.',
+
+  priv_title: 'Privacy',
+  priv_1: 'Runs <b>entirely on your computer</b>. Nothing is sent anywhere: no account, no server, no usage tracking.',
+  priv_2: 'Seal Check <b>only reads</b>. It installs nothing on the iPhone, deletes no data and changes no settings.',
+  priv_3: 'The diagnostic used for the factory check is <b>deleted from the iPhone and from the computer</b> at the end. When you press the buttons, the iPhone saves a screenshot in Photos: tell the seller, or delete it.',
+  priv_4: 'A report you export contains the phone’s serial number and IMEI. Keep it private.',
+  lim_title: 'What it cannot tell you',
+  lim_p: 'A green result means Seal Check found nothing wrong in what it can read. It does not prove the phone was never opened. Before trusting the result, read the list of what it cannot see.',
+  lim_link: 'Read Seal Check’s limits',
+
+  foot_1: 'Open source, MIT license. <a href="https://github.com/dosxnjos/lacre">See the code on GitHub</a>.',
+  foot_2: 'Seal Check is not affiliated with Apple. iPhone is a trademark of Apple Inc.'
+}
+};
+
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+};
+const LANG_KEY = 'lacre.dl.lang';
+
+let lang = (() => {
+  let q = null;
+  try { q = new URLSearchParams(location.search).get('lang'); } catch (e) {}
+  if (q === 'pt' || q === 'en') return q;
+  const s = store.get(LANG_KEY);
+  if (s === 'pt' || s === 'en') return s;
+  return (navigator.language || '').toLowerCase().startsWith('en') ? 'en' : 'pt';
+})();
+
+const t = (k) => (I18N[lang][k] !== undefined ? I18N[lang][k] : I18N.pt[k]);
+
+/* ================= OS detection ================= */
+function detectOS() {
+  const ua = navigator.userAgent || '';
+  const uad = navigator.userAgentData;
+  const p = (uad && typeof uad.platform === 'string' ? uad.platform : '').toLowerCase();
+  if (p === 'android' || /Android/i.test(ua)) return 'android';
+  if (p === 'ios' || /iPhone|iPad|iPod/i.test(ua)) return 'ios';
+  // iPadOS Safari reports itself as a Mac; touch points give it away.
+  if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return 'ios';
+  if (p === 'windows') return 'windows';
+  if (p === 'macos') return 'mac';
+  if (p === 'chrome os' || p === 'chromeos') return 'chromeos';
+  if (p === 'linux') return 'linux';
+  if (/Windows/.test(ua)) return 'windows';
+  if (/Macintosh|Mac OS X/.test(ua)) return 'mac';
+  if (/CrOS/.test(ua)) return 'chromeos';
+  if (/Linux|X11/.test(ua)) return 'linux';
+  return 'other';
+}
+const OS = detectOS();
+document.documentElement.setAttribute('data-os', OS);
+const isMobile = OS === 'android' || OS === 'ios';
+
+// CPU architecture, only from Chromium browsers (User-Agent Client Hints).
+// Safari and Firefox do not expose it, so ARCH stays null and both Mac buttons look the same.
+// Chrome running under Rosetta reports x86, which is why the copy says "looks like".
+let ARCH = null;
+function detectArch() {
+  const uad = navigator.userAgentData;
+  if (!uad || typeof uad.getHighEntropyValues !== 'function') return;
+  if (OS !== 'windows' && OS !== 'mac') return;
+  let pr;
+  try { pr = uad.getHighEntropyValues(['architecture', 'bitness']); } catch (e) { return; }
+  if (!pr || typeof pr.then !== 'function') return;
+  pr.then((v) => {
+    const a = v && typeof v.architecture === 'string' ? v.architecture.toLowerCase() : '';
+    if (a === 'arm' || a === 'x86') { ARCH = a; renderPrimary(); }
+  }).catch(() => {});
+}
+
+/* ================= primary download ================= */
+const DL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>';
+
+function bigBtn(asset, labelKey, subKey, primary) {
+  return '<a class="btn big ' + (primary ? 'primary" id="primaryDl' : 'dl-alt') +
+    '" data-asset="' + asset + '" href="' + ASSET[asset] + '">' + DL_ICON +
+    '<span class="txt">' + t(labelKey) + '<span class="sub">' + t(subKey) + '</span></span></a>';
+}
+
+function renderPrimary() {
+  const box = document.getElementById('dl');
+  const main = document.getElementById('dlMain');
+  const extra = document.getElementById('dlExtra');
+  const title = document.getElementById('dlTitle');
+  const mobile = document.getElementById('mobile');
+  if (isMobile) { box.hidden = true; mobile.hidden = false; return; }
+  mobile.hidden = true;
+  box.hidden = false;
+  if (OS === 'windows') {
+    title.textContent = t('dl_title_windows');
+    main.innerHTML = bigBtn('win-exe', 'btn_win', 'btn_win_sub', true) + bigBtn('win-zip', 'btn_win_zip', 'btn_win_zip_sub', false);
+    extra.innerHTML = (ARCH === 'arm' ? '<p class="archnote">' + t('win_arm_note') + '</p>' : '') +
+      '<p class="dl-note">' + t('dl_note_win') + '</p>';
+  } else if (OS === 'mac') {
+    // Both versions are always offered. When a Chromium browser reports the CPU, the matching one
+    // becomes the primary button; otherwise (Safari, Firefox) Apple chip stays first.
+    title.textContent = t('dl_title_mac');
+    const intel = ARCH === 'x86';
+    main.innerHTML = intel
+      ? bigBtn('mac-intel', 'btn_mac_intel', 'btn_mac_intel_sub', true) + bigBtn('mac-arm', 'btn_mac_arm', 'btn_mac_arm_sub', false)
+      : bigBtn('mac-arm', 'btn_mac_arm', 'btn_mac_arm_sub', true) + bigBtn('mac-intel', 'btn_mac_intel', 'btn_mac_intel_sub', false);
+    const guess = ARCH === 'arm' ? '<p>' + t('mac_arch_arm') + '</p>' : intel ? '<p>' + t('mac_arch_intel') + '</p>' : '';
+    extra.innerHTML = '<div class="which">' + guess + '<p>' + t('which_how') + '</p></div><p class="dl-note">' + t('dl_note_mac') + '</p>';
+    // Same choice in the Mac install tab.
+    const tabArm = document.getElementById('macTabArm');
+    const tabIntel = document.getElementById('macTabIntel');
+    tabArm.classList.toggle('primary', !intel);
+    tabIntel.classList.toggle('primary', intel);
+    if (intel) tabArm.parentNode.insertBefore(tabIntel, tabArm);
+    else tabArm.parentNode.insertBefore(tabArm, tabIntel);
+  } else if (OS === 'chromeos') {
+    title.textContent = t('dl_title_chromeos');
+    main.innerHTML = '';
+    extra.innerHTML = '<p class="dl-note">' + t('dl_note_chromeos') + '</p>';
+  } else if (OS === 'linux') {
+    title.textContent = t('dl_title_linux');
+    main.innerHTML = bigBtn('linux-appimage', 'btn_linux', 'btn_linux_sub', true) + bigBtn('linux-deb', 'btn_linux_deb', 'btn_linux_deb_sub', false);
+    extra.innerHTML = '<p class="dl-note">' + t('dl_note_linux') + '</p>';
+  } else {
+    title.textContent = t('dl_title_other');
+    main.innerHTML = '';
+    extra.innerHTML = '<p class="dl-note">' + t('dl_note_other') + '</p>';
+  }
+}
+
+/* ================= tabs ================= */
+const tabs = Array.from(document.querySelectorAll('[data-os-tab]'));
+function selectTab(os, focus) {
+  tabs.forEach((b) => {
+    const on = b.dataset.osTab === os;
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+    b.tabIndex = on ? 0 : -1;
+    document.getElementById(b.getAttribute('aria-controls')).hidden = !on;
+    if (on && focus) b.focus();
+  });
+}
+tabs.forEach((b, i) => {
+  b.addEventListener('click', () => selectTab(b.dataset.osTab, false));
+  b.addEventListener('keydown', (e) => {
+    let j = null;
+    if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+    else if (e.key === 'Home') j = 0;
+    else if (e.key === 'End') j = tabs.length - 1;
+    if (j !== null) { e.preventDefault(); selectTab(tabs[j].dataset.osTab, true); }
+  });
+});
+selectTab(OS === 'mac' || OS === 'linux' ? OS : 'windows', false);
+
+/* ================= apply language ================= */
+function applyI18n() {
+  document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en';
+  document.title = t('doc_title');
+  const md = document.querySelector('meta[name="description"]');
+  if (md) md.setAttribute('content', t('doc_desc'));
+  document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-html]').forEach((el) => { el.innerHTML = t(el.dataset.i18nHtml); });
+  document.querySelectorAll('[data-i18n-aria]').forEach((el) => { el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
+  const lb = document.getElementById('langBtn');
+  lb.textContent = t('lang_btn');
+  lb.setAttribute('lang', lang === 'pt' ? 'en' : 'pt-BR');
+  lb.setAttribute('aria-label', t('lang_btn_aria'));
+  document.querySelector('.brand').setAttribute('aria-label', t('brand'));
+  renderPrimary();
+}
+
+document.getElementById('langBtn').addEventListener('click', () => {
+  lang = lang === 'pt' ? 'en' : 'pt';
+  store.set(LANG_KEY, lang);
+  document.getElementById('copyMsg').textContent = '';
+  document.getElementById('shareMsg').textContent = '';
+  applyI18n();
+});
+
+/* ================= share (phones) ================= */
+document.getElementById('shareBtn').addEventListener('click', async () => {
+  const msg = document.getElementById('shareMsg');
+  const url = 'https://dosxnjos.github.io/lacre/';
+  try {
+    if (navigator.share) { await navigator.share({ title: t('doc_title'), url: url }); return; }
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    msg.textContent = t('m_copied');
+  } catch (e) {
+    msg.textContent = t('m_copy_fail');
+  }
+});
+
+/* ================= copy the Terminal line (Mac) ================= */
+document.getElementById('copyBtn').addEventListener('click', async () => {
+  const code = document.getElementById('xattrCmd');
+  const msg = document.getElementById('copyMsg');
+  try {
+    if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('no clipboard');
+    await navigator.clipboard.writeText(code.textContent.trim());
+    msg.textContent = t('copy_ok');
+  } catch (e) {
+    try {
+      const r = document.createRange();
+      r.selectNodeContents(code);
+      const s = window.getSelection();
+      s.removeAllRanges();
+      s.addRange(r);
+    } catch (e2) {}
+    msg.textContent = t('copy_fail');
+  }
+});
+
+applyI18n();
+detectArch();
+})();
+</script>
+</body>
+</html>

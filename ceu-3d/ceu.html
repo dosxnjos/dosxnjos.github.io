@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>céu — central</title>
+<!--
+  ceu.html — a view "3D" do board (roadmap 2026-08-17-melhoria-secao-3d-ceu-de-cards.md).
+
+  Vive num <iframe> criado pelo index.html SÓ quando a view está ativa, e
+  destruído quando sai: é a garantia mais forte de que o loop não roda
+  escondido (não depende de lembrar de cancelar cada rAF).
+
+  Contrato de leitura (doc completa em docs/CEU-3D.md): cada propriedade
+  visual carrega UMA variável de dado. Cor = área. Posição = status. Distância
+  e vermelho = idade. Tamanho = importante. Pulso = urgente. Anel = rodada de
+  execução. Nada aqui é aleatório: a posição sai de hash(card.id), então o
+  mesmo estado desenha o MESMO céu — é isso que permite reconhecer de relance.
+-->
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;background:#05080b}
+  body{font:13px/1.45 ui-sans-serif,system-ui,"Segoe UI",sans-serif;color:#e8efee}
+  #palco{width:100%;height:100%;cursor:grab}
+  #palco.arrastando{cursor:grabbing}
+  #cv{display:block;width:100%;height:100%}
+
+  .painel{position:fixed;background:rgba(8,14,19,.82);border:1px solid #22313b;
+          border-radius:10px;backdrop-filter:blur(3px)}
+
+  /* legenda + contadores: o único texto da tela, escondível com "l" */
+  #legenda{left:14px;bottom:14px;padding:10px 12px;max-width:290px;font-size:11.5px;color:#93a9a6}
+  #legenda h4{font-size:11px;font-weight:600;color:#e8efee;letter-spacing:.04em;
+              text-transform:uppercase;margin-bottom:7px}
+  #legenda ul{list-style:none;display:grid;gap:3px}
+  #legenda li{display:flex;gap:6px;align-items:baseline}
+  #legenda b{color:#c8d8d5;font-weight:500;min-width:74px;flex:none}
+  #legenda .rodape{margin-top:8px;padding-top:7px;border-top:1px solid #22313b;font-size:10.5px;color:#7d938f}
+  #hud{right:14px;top:14px;padding:9px 12px;font-size:12px;display:flex;gap:14px;align-items:center}
+  #hud span{display:flex;gap:5px;align-items:baseline}
+  #hud b{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+  #hud i{font-style:normal;color:#7d938f;font-size:11px}
+
+  /* tooltip do corpo sob o cursor: HTML sobreposto, nunca texto em 3D */
+  #dica{position:fixed;pointer-events:none;opacity:0;transition:opacity .12s;
+        background:rgba(8,14,19,.94);border:1px solid #2c3f4a;border-radius:8px;
+        padding:7px 9px;max-width:320px;font-size:12px;z-index:5}
+  #dica .t{color:#e8efee;margin-bottom:3px}
+  #dica .m{color:#7d938f;font-size:11px;display:flex;gap:8px}
+
+  /* pausa por janela pequena: o requisito é não rodar fora do maximizado */
+  #aviso{position:fixed;inset:0;display:none;place-items:center;text-align:center;
+         background:#05080b;color:#93a9a6;padding:24px}
+  #aviso.on{display:grid}
+  #aviso strong{display:block;color:#e8efee;font-size:15px;margin-bottom:6px}
+  #erro{left:50%;top:50%;transform:translate(-50%,-50%);padding:16px 18px;display:none;
+        max-width:420px;color:#e0715a}
+  #erro.on{display:block}
+</style>
+</head>
+<body>
+<!-- o canvas é criado e DESTRUÍDO em runtime (ver criarRenderer/dormir); o palco
+     é o que permanece: guarda os listeners de mouse e o alvo do IntersectionObserver -->
+<div id="palco"></div>
+
+<div id="hud" class="painel" hidden>
+  <span><b id="nAgora">0</b><i>em voo</i></span>
+  <span><b id="nDecisao">0</b><i>em ti</i></span>
+  <span><b id="nEsperando">0</b><i>lá fora</i></span>
+  <span><b id="nFila">0</b><i>na fila</i></span>
+</div>
+
+<div id="legenda" class="painel" hidden>
+  <h4>como ler o céu</h4>
+  <ul>
+    <li><b>estrela</b> uma área (cor do board); fraca = área sem nenhum card</li>
+    <li><b>centro</b> tu</li>
+    <li><b>órbita interna</b> em voo, com cauda</li>
+    <li><b>meio-caminho</b> parado em ti: espera decisão</li>
+    <li><b>rumo pra fora</b> esperando terceiro; distância = há quanto tempo</li>
+    <li><b>vermelho e longe</b> envelhecendo</li>
+    <li><b>pulso rápido</b> urgente</li>
+    <li><b>corpo maior</b> importante</li>
+    <li><b>anel</b> uma rodada de execução já gasta</li>
+    <li><b>céu de fundo</b> feito nos últimos 30 dias; poeira = mais antigo</li>
+  </ul>
+  <div class="rodape">arrasta para girar · roda para aproximar · clique abre o card no kanban · <b>f</b> tela cheia · <b>l</b> esconde este texto</div>
+</div>
+
+<div id="dica"><div class="t"></div><div class="m"></div></div>
+<div id="aviso"><div><strong>maximize a janela</strong>o céu só roda em tela cheia: fora dela, o loop fica parado de propósito (GPU zero).</div></div>
+<div id="erro" class="painel"></div>
+
+<script type="module">
+import * as THREE from "./vendor/three.module.min.js";
+
+// ---------- mapeamento dado -> luz (contrato; mexer aqui muda a leitura) ----------
+// ⚠️ Escala calibrada em 17/08/2026 contra o board real (56 cards, 7 áreas) e o
+// tamanho em PIXEL na tela: corpo tem que dar ~12px pra ser distinguível de
+// relance, e a órbita interna tem que sair do glow da estrela (senão o
+// aglomerado vira um borrão só). Mexer numa destas constantes exige olhar o
+// resultado com screenshot — o número certo não sai da cabeça.
+const RAIO_AREA      = 83;      // raio do anel de estrelas ao redor do centro (tu)
+// FAIXA de raio por status, não raio fixo: com raio fixo, 14 cards `proximo` da
+// mesma área viram um anel apertado que o blending aditivo funde numa mancha só.
+// Faixa larga espalha o sistema num DISCO — a leitura "mais perto = mais em voo"
+// continua, e cada corpo fica distinguível. O raio dentro da faixa sai de
+// hash(id): determinístico, e não muda quando um card entra ou sai.
+const FAIXA = { agora: [6, 9.5], proximo: [12, 24], depois: [28, 36] };
+const INCLINACAO_MAX = 0.40;    // rad: o sistema é um disco, não uma esfera
+const DIAS_REDSHIFT  = 45;      // idade em que o corpo chega ao vermelho cheio
+const DIAS_ESPERA    = 21;      // espera que leva o pulso ao fim do caminho
+const DIAS_CEU       = 30;      // feito mais novo que isto vira estrela com identidade
+const RAIO_CEU       = 168;     // esfera celeste dos feitos: fora dos sistemas
+                                // (~128 de extensão), mas DENTRO do enquadramento
+                                // — a 230 ficava fora do campo e o passado
+                                // simplesmente não aparecia (medido 17/08/2026)
+const REVOLUCAO_S    = 1200;    // o céu gira em BLOCO: 20 min por volta (ver docs)
+const COR_FEITO      = new THREE.Color("#66c28d");
+const COR_VELHO      = new THREE.Color("#ff4a2e");
+const COR_ALERTA     = new THREE.Color("#e6a94e");
+
+// ---------- determinismo: toda posição sai daqui, nunca de Math.random ----------
+function hash32(s){
+  let h = 0x811c9dc5;                    // FNV-1a
+  for(let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return h >>> 0;
+}
+const uni  = (s) => hash32(s) / 4294967296;        // [0,1)
+const ang  = (s) => uni(s) * Math.PI * 2;
+const simetrico = (s) => uni(s) * 2 - 1;           // [-1,1)
+
+// ---------- three: cena, câmera, renderer ----------
+// ⚠️ O renderer e o canvas são DESCARTÁVEIS de propósito (pedido do Gabriel,
+// 17/08/2026): quando o céu não está sendo mostrado, não basta parar o loop —
+// o contexto WebGL é liberado e o canvas sai do DOM, para o uso de GPU ir a
+// zero de verdade em vez de ficar um contexto vivo ocioso. Por isso `cv` e
+// `renderer` são `let`, os listeners de mouse vivem no `#palco` (que nunca é
+// removido) e a cena é reconstruída ao acordar.
+const palco = document.getElementById("palco");
+let cv = null, renderer = null;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color("#05080b");
+const camera = new THREE.PerspectiveCamera(50, 1, 0.5, 2000);
+const mundo = new THREE.Group();      // tudo que representa dado gira junto
+scene.add(mundo);
+let fundoEstrelas = null, nucleo = null;
+
+function criarRenderer(){
+  cv = document.createElement("canvas");
+  cv.id = "cv";
+  palco.appendChild(cv);
+  renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: false, powerPreference: "low-power" });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+}
+function destruirRenderer(){
+  if(!renderer) return;
+  renderer.dispose();
+  renderer.forceContextLoss?.();     // devolve a GPU de fato, não só para o loop
+  renderer = null;
+  if(cv && cv.parentNode) cv.parentNode.removeChild(cv);
+  cv = null;
+}
+
+// ---------- texturas geradas em runtime (zero arquivo, zero requisição) ----------
+const cacheTex = new Map();
+function texGlow(aneis = 0){
+  const chave = "g" + aneis;
+  if(cacheTex.has(chave)) return cacheTex.get(chave);
+  const N = 128, c = document.createElement("canvas");
+  c.width = c.height = N;
+  const g = c.getContext("2d"), m = N / 2;
+  const grad = g.createRadialGradient(m, m, 0, m, m, m);
+  grad.addColorStop(0.00, "rgba(255,255,255,1)");
+  grad.addColorStop(0.14, "rgba(255,255,255,.92)");
+  grad.addColorStop(0.34, "rgba(255,255,255,.26)");
+  grad.addColorStop(1.00, "rgba(255,255,255,0)");
+  g.fillStyle = grad; g.fillRect(0, 0, N, N);
+  // anel = rodada de execução já gasta (card.modelos). Vai na textura porque o
+  // corpo é billboard: anel sempre de frente lê melhor que anel em perspectiva.
+  g.strokeStyle = "rgba(255,255,255,.55)";
+  for(let i=0;i<Math.min(aneis,4);i++){
+    g.lineWidth = 1.6;
+    g.beginPath(); g.arc(m, m, m*(0.46 + i*0.13), 0, Math.PI*2); g.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  cacheTex.set(chave, t);
+  return t;
+}
+function destruirTexturas(){
+  for(const t of cacheTex.values()) t.dispose();
+  cacheTex.clear();
+}
+
+// ---------- campo de estrelas do universo (não é dado: é o fundo) ----------
+function criarFundo(){
+  const n = 1100, pos = new Float32Array(n*3);
+  for(let i=0;i<n;i++){
+    const s = "fundo" + i, u = uni(s)*2-1, a = ang(s+"a"), r = 340 + uni(s+"r")*180;
+    const k = Math.sqrt(1-u*u);
+    pos[i*3] = Math.cos(a)*k*r; pos[i*3+1] = u*r*0.7; pos[i*3+2] = Math.sin(a)*k*r;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  fundoEstrelas = new THREE.Points(geo, new THREE.PointsMaterial({
+    size: 1.5, map: texGlow(0), color: "#cfe3e0", transparent: true, opacity: .5,
+    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
+  }));
+  scene.add(fundoEstrelas);
+
+  // o centro do céu é o observador: tu
+  nucleo = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: texGlow(0), color: "#e8efee", transparent: true, opacity: .5,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+  nucleo.scale.set(8, 8, 1);
+  mundo.add(nucleo);
+}
+function destruirFundo(){
+  for(const o of [fundoEstrelas, nucleo]){
+    if(!o) continue;
+    o.parent?.remove(o);
+    o.geometry?.dispose();
+    (Array.isArray(o.material) ? o.material : [o.material]).forEach(m=>m?.dispose());
+  }
+  fundoEstrelas = nucleo = null;
+}
+
+// ---------- estado da cena ----------
+const corpos = [];            // {sprite, card, base, periodo, amp, fase, extras:[]}
+let posEstrelas = [];         // posição das estrelas de área (entra no enquadramento)
+let nomeArea = new Map();     // id -> nome legível (a área "casa" tem id `mrqtobjesddo1`)
+// ⚠️ Alvos do hover. Antes só os corpos de card entravam no raycast, então
+// estrela de área, feito do céu de fundo e os halos (que ficam POR CIMA do
+// corpo) não diziam nada — "nem toda orbe tem informação" (Gabriel, 17/08/2026).
+// Aqui todo objeto clicável/apontável declara de quem ele é: valor fixo, ou
+// função de (índice do vértice) para os `Points`.
+let mapaHover = new Map();    // Object3D -> info | (indice) => info
+// Fase 2: estado das sessões (GET /api/sessoes). `pede_permissao`/`pendurada`
+// eclipsam o card; `rodando` acende a cauda. É o sinal mais importante da tela:
+// é o equivalente 3D da faixa "precisam de você" do board.
+let sessoesPorId = new Map();     // session_id -> {estado, rotulo, cwd}
+const ESPERAM = new Set(["pede_permissao", "pendurada"]);
+let grupoDado = new THREE.Group();
+mundo.add(grupoDado);
+let stateAtual = null;
+
+function limparGrupo(g){
+  g.traverse(o=>{
+    if(o.geometry) o.geometry.dispose();
+    if(o.material){ (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose()); }
+  });
+  mundo.remove(g);
+}
+
+function corDoCard(card, cores){
+  const base = new THREE.Color(cores.get(card.area) || "#8ea6d6");
+  const dias = idadeDias(card.criado_em);
+  const f = Math.min(1, dias / DIAS_REDSHIFT) * 0.75;   // redshift: idade -> vermelho
+  return base.clone().lerp(COR_VELHO, f);
+}
+function idadeDias(iso){
+  if(!iso) return 0;
+  const t = Date.parse(iso);
+  if(Number.isNaN(t)) return 0;
+  return Math.max(0, (Date.now() - t) / 86400000);
+}
+function sprite(cor, tam, opacidade, aneis){
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: texGlow(aneis), color: cor, transparent: true, opacity: opacidade,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+  s.scale.set(tam, tam, 1);
+  return s;
+}
+
+// espelho do `cardRemovido` do `index.html` e de `estado_escrita.esta_removido`.
+// Cópia declarada porque o céu é um arquivo independente com fetch próprio —
+// a régua é curta e literal nos três lados: dict NÃO-VAZIO. (`!!{}` é `true`
+// no JS e `False` no Python; o dict vazio fica de fora dos três.)
+const CAMPOS_REMOVIDO_CEU = ["quando","por","motivo","supersedido_por"];
+function cardRemovidoCeu(c){
+  const r = (c||{}).removido;
+  return !!r && typeof r === "object" && !Array.isArray(r)
+      && CAMPOS_REMOVIDO_CEU.some(k => k in r);
+}
+function cardsVivosCeu(s){ return ((s||{}).cards||[]).filter(c=>!cardRemovidoCeu(c)); }
+
+function construir(state){
+  // tombstone (Fase 4, 07/09/2026): card removido não é desenhado. O céu é
+  // RADAR e somente-leitura (docs/CEU-3D.md) — ele filtra e nunca escreve.
+  // ⚠️ o filtro entra aqui E em `contar` E em `assinatura`: são três leituras
+  // independentes do mesmo array, e o céu tem fetch próprio (não herda nada
+  // do `visiveis()` do board).
+  state = {...state, cards: cardsVivosCeu(state)};
+  // nome próprio para o que já está filtrado: dentro desta função `state.cards`
+  // e `cards` são a mesma lista, mas só `cards` DIZ isso — e é o que impede
+  // que uma linha movida daqui para fora volte a ler o array cru sem alarme
+  // (`tools/testa_tombstone.py` varre o board por leitura crua).
+  const cards = state.cards;
+  limparGrupo(grupoDado);
+  corpos.length = 0;
+  posEstrelas = [];
+  mapaHover = new Map();
+  grupoDado = new THREE.Group();
+  mundo.add(grupoDado);
+
+  const areas = state.areas || [];
+  const cores = new Map(areas.map(a=>[a.id, a.cor]));
+  nomeArea = new Map(areas.map(a=>[a.id, a.nome || a.id]));
+  const ordenadas = [...areas].sort((a,b)=>(a.ordem??0)-(b.ordem??0));
+  const posArea = new Map();
+
+  // estrelas: num ANEL ao redor do centro (tu), igualmente espaçadas em ângulo.
+  // O anel (em vez de espiral crescente) mantém todas as áreas equidistantes de
+  // ti — nenhuma parte da vida nasce mais central que outra.
+  // ⚠️ Trade-off medido em 17/08/2026: com ângulo áureo (i*137,5°) as 4 áreas
+  // que TÊM card caíram em ângulos vizinhos (0°, 275°, 327°) e metade do céu
+  // ficou vazia. Espaçamento igual (i*360/n) resolve, ao custo de reorganizar o
+  // céu quando uma área nasce ou morre — evento raro e visível, enquanto a
+  // leitura de relance é diária. A posição segue determinística para um mesmo
+  // conjunto de áreas, que é o que importa no dia a dia.
+  const nAreas = Math.max(1, ordenadas.length);
+  ordenadas.forEach((a, i)=>{
+    const th = 0.35 + i * (Math.PI * 2 / nAreas);
+    const r = RAIO_AREA * (1 + (i % 3) * 0.13);
+    const p = new THREE.Vector3(Math.cos(th)*r, simetrico(a.id+"y")*2.2, Math.sin(th)*r);
+    posArea.set(a.id, p);
+    posEstrelas.push(p);
+    const nCards = cards.filter(c=>c.area===a.id && c.status!=="feito").length;
+    // área sem card fica TÊNUE, nunca ausente: "essa parte da vida está vazia"
+    // é informação que o céu dá de graça.
+    const s = sprite(new THREE.Color(a.cor||"#8ea6d6"), nCards ? 9 : 4.5, nCards ? .95 : .28, 0);
+    s.position.copy(p);
+    grupoDado.add(s);
+    const feitosArea = cards.filter(c=>c.area===a.id && c.status==="feito").length;
+    mapaHover.set(s, {
+      titulo: a.nome || a.id,
+      linha: nCards
+        ? `área · ${nCards} ativo${nCards>1?"s":""}${feitosArea?` · ${feitosArea} feito${feitosArea>1?"s":""}`:""}`
+        : "área · nenhum card",
+    });
+  });
+
+  // estrutura do céu: o cinturão das áreas (anel) e uma radial do centro até
+  // cada estrela. Não carrega dado novo — desenha o que já é verdade (tu no
+  // centro, as frentes da tua vida ao redor) e evita que metade da tela fique
+  // sem nada quando várias áreas estão vazias.
+  {
+    const mat = new THREE.LineBasicMaterial({ color: "#2c3f4a", transparent: true, opacity: .5,
+                                              blending: THREE.AdditiveBlending, depthWrite: false });
+    const pontos = [];
+    for(let i=0;i<=180;i++){
+      const t = (i/180) * Math.PI * 2;
+      pontos.push(new THREE.Vector3(Math.cos(t)*RAIO_AREA, 0, Math.sin(t)*RAIO_AREA));
+    }
+    grupoDado.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pontos), mat));
+    for(const p of posEstrelas){
+      grupoDado.add(new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), p.clone()]),
+        new THREE.LineBasicMaterial({ color: "#22313b", transparent: true, opacity: .45,
+                                      blending: THREE.AdditiveBlending, depthWrite: false })));
+    }
+  }
+
+  const feitosRecentes = [], feitosAntigos = [];
+
+  for(const card of cards){
+    const est = card.status;
+    if(est === "feito"){
+      const d = idadeDias(card.concluido_em || card.criado_em);
+      (d <= DIAS_CEU ? feitosRecentes : feitosAntigos).push({card, d});
+      continue;
+    }
+    const estrela = posArea.get(card.area) || new THREE.Vector3();
+    const cor = corDoCard(card, cores);
+    const ideia = card.tipo === "ideia";
+    let tam = (card.importante ? 3.2 : 2.2) * (ideia ? 1.3 : 1);
+    const opac = ideia ? .38 : (est === "depois" ? .45 : .95);
+    const aneis = Array.isArray(card.modelos) ? card.modelos.length : 0;
+    const s = sprite(cor, tam, opac, aneis);
+    const extras = [];
+
+    if(est === "decisao"){
+      // ponto de Lagrange: suspenso entre a estrela da área e o centro (tu).
+      // Não cai pra lado nenhum até alguém empurrar. Quanto mais coisa no
+      // meio do caminho, mais coisa travada em ti.
+      const t = 0.42 + uni(card.id+"L")*0.16;
+      s.position.copy(estrela).multiplyScalar(t);
+      s.position.y += simetrico(card.id+"ly") * 1.6;
+      const halo = sprite(COR_ALERTA, tam*3.2, .30, 0);
+      halo.position.copy(s.position);
+      grupoDado.add(halo);
+      extras.push({sprite: halo, mult: 3.2});
+    } else if(est === "esperando"){
+      // pulso viajando pra FORA do sistema: a distância percorrida é a idade
+      // da espera. Card esquecido com terceiro literalmente se afasta.
+      const dir = estrela.clone().setY(0).normalize();
+      if(dir.lengthSq() === 0) dir.set(1,0,0);
+      const dias = idadeDias(card.agora_desde || card.criado_em);
+      const frac = Math.min(1, dias / DIAS_ESPERA);
+      const partida = estrela.clone().add(dir.clone().multiplyScalar(11));
+      const destino = estrela.clone().add(dir.clone().multiplyScalar(44));
+      s.position.lerpVectors(partida, destino, frac);
+      s.position.y = estrela.y + simetrico(card.id+"ey")*0.8;
+      const geo = new THREE.BufferGeometry().setFromPoints([partida, destino]);
+      const trilho = new THREE.Line(geo, new THREE.LineBasicMaterial({
+        color: cor, transparent: true, opacity: .16, blending: THREE.AdditiveBlending, depthWrite: false,
+      }));
+      grupoDado.add(trilho);
+    } else {
+      const [r0, r1] = FAIXA[est] || FAIXA.proximo;
+      const raio = r0 + uni(card.id+"r") * (r1 - r0);
+      const a = ang(card.id);
+      const inc = simetrico(card.id+"i") * INCLINACAO_MAX;
+      s.position.set(
+        estrela.x + Math.cos(a) * raio * Math.cos(inc),
+        estrela.y + Math.sin(inc) * raio,
+        estrela.z + Math.sin(a) * raio * Math.cos(inc),
+      );
+      if(est === "agora"){
+        // cauda de cometa: 8 pontos na tangente, decrescentes. Fase 2 liga o
+        // comprimento à atividade real da sessão.
+        const tang = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a));
+        for(let k=1;k<=8;k++){
+          const p = sprite(cor, tam*(1 - k*0.1), .5*(1 - k/9), 0);
+          p.position.copy(s.position).add(tang.clone().multiplyScalar(-k*1.7));
+          grupoDado.add(p);
+        }
+        const halo = sprite(new THREE.Color("#fff4d6"), tam*4.2, .34, 0);
+        halo.position.copy(s.position);
+        grupoDado.add(halo);
+        extras.push({sprite: halo, mult: 4.2});
+      }
+    }
+
+    // ---- Fase 2: o estado da SESSÃO vinculada, que o card sozinho não sabe ----
+    const estadosSessao = (card.sessoes || []).map(sid => (sessoesPorId.get(sid) || {}).estado).filter(Boolean);
+    const teEspera = estadosSessao.some(e => ESPERAM.has(e));
+    const rodando  = estadosSessao.includes("rodando");
+    let periodo = card.urgente ? 1.2 : 5.0;
+    let amp     = card.urgente ? 0.22 : 0.08;
+    if(teEspera){
+      // ECLIPSE. ⚠️ O corpo NÃO muda de lugar: posição é determinística e mover
+      // um card por estado transitório destruiria o reconhecimento de relance
+      // (era "trazer pro primeiro plano" no roadmap; virou destaque no lugar).
+      // O pilar vertical existe pra o sinal aparecer mesmo com o corpo atrás de
+      // outro sistema — é o que se vê de 3 metros.
+      const halo = sprite(COR_ALERTA, tam * 3.6, .42, 0);
+      halo.position.copy(s.position);
+      grupoDado.add(halo);
+      extras.push({sprite: halo, mult: 3.6});
+      const alto = s.position.clone().setY(s.position.y + 20);
+      grupoDado.add(new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([s.position.clone(), alto]),
+        new THREE.LineBasicMaterial({ color: COR_ALERTA, transparent: true, opacity: .5,
+                                      blending: THREE.AdditiveBlending, depthWrite: false })));
+      periodo = 0.95; amp = 0.3;
+    } else if(rodando){
+      periodo = 2.2; amp = 0.16;
+    }
+
+    grupoDado.add(s);
+    const item = {
+      sprite: s, card, base: tam, extras, periodo, amp,
+      sessao: teEspera ? "te espera" : (rodando ? "rodando" : null),
+      fase: ang(card.id + "p"),
+    };
+    corpos.push(item);
+    // o corpo E os adornos dele (halo, pilar) apontam para o mesmo dono: o halo
+    // fica por cima e, sem isto, engolia o hover do próprio corpo.
+    mapaHover.set(s, { corpo: item });
+    for(const e of extras) mapaHover.set(e.sprite, { corpo: item });
+  }
+
+  // sessões que te esperam SEM card vinculado: no board são a faixa "sessões
+  // soltas"; aqui orbitam o próprio centro (tu), porque é exatamente isso que
+  // elas são — coisa parada esperando resposta, sem endereço no trabalho.
+  for(const [sid, s0] of sessoesPorId){
+    if(!ESPERAM.has(s0.estado)) continue;
+    if(cards.some(c=>(c.sessoes||[]).includes(sid))) continue;
+    const a = ang(sid), r = 17 + uni(sid+"r") * 7;
+    const sp = sprite(COR_ALERTA, 4.5, .9, 0);
+    sp.position.set(Math.cos(a)*r, simetrico(sid+"y")*2, Math.sin(a)*r);
+    const halo = sprite(COR_ALERTA, 14, .3, 0);
+    halo.position.copy(sp.position);
+    grupoDado.add(halo);
+    const alto = sp.position.clone().setY(sp.position.y + 20);
+    grupoDado.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([sp.position.clone(), alto]),
+      new THREE.LineBasicMaterial({ color: COR_ALERTA, transparent: true, opacity: .5,
+                                    blending: THREE.AdditiveBlending, depthWrite: false })));
+    grupoDado.add(sp);
+    const item = {
+      sprite: sp, base: 4.5, extras: [{sprite: halo, mult: 14/4.5}],
+      periodo: 1.1, amp: 0.28, fase: ang(sid+"p"),
+      sessao: "te espera", sid,
+      card: { id: null, titulo: s0.rotulo || "sessão sem card", area: "sessão solta",
+              status: "te espera", criado_em: null },
+    };
+    corpos.push(item);
+    mapaHover.set(sp, { corpo: item });
+    mapaHover.set(halo, { corpo: item });
+  }
+
+  // céu de fundo: o passado. Posição pela DATA (setor = quando fechou).
+  if(feitosRecentes.length){
+    const pos = new Float32Array(feitosRecentes.length*3);
+    const col = new Float32Array(feitosRecentes.length*3);
+    feitosRecentes.forEach(({card, d}, i)=>{
+      // setor = QUANDO fechou; o espalhamento por hash existe porque num dia
+      // cheio o board fecha 10 cards e todos cairiam no mesmo ângulo (medido
+      // 17/08/2026: 22 feitos, todos de hoje, empilhados num ponto só).
+      const th = (1 - d / DIAS_CEU) * Math.PI * 2 + simetrico(card.id+"ct") * 0.42;
+      const lat = simetrico(card.id+"c") * 0.8;
+      pos[i*3]   = Math.cos(th) * Math.cos(lat) * RAIO_CEU;
+      pos[i*3+1] = Math.sin(lat) * RAIO_CEU * 0.6;
+      pos[i*3+2] = Math.sin(th) * Math.cos(lat) * RAIO_CEU;
+      const c = new THREE.Color(cores.get(card.area) || "#66c28d").lerp(COR_FEITO, .5);
+      col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b;
+    });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    const pts = new THREE.Points(geo, new THREE.PointsMaterial({
+      size: 11, map: texGlow(0), vertexColors: true, transparent: true, opacity: .95,
+      blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
+    }));
+    grupoDado.add(pts);
+    // o passado também responde ao mouse: `Points` resolve pelo índice do vértice
+    mapaHover.set(pts, (i)=>{
+      const f = feitosRecentes[i];
+      if(!f) return null;
+      const d = Math.floor(f.d);
+      return { titulo: f.card.titulo, id: f.card.id,
+               linha: `${nomeArea.get(f.card.area) || f.card.area} · feito ${d === 0 ? "hoje" : "há " + d + "d"}` };
+    });
+  }
+  // mais velho que 30 dias: poeira. Só massa, sem identidade — acúmulo sem custo.
+  if(feitosAntigos.length){
+    const pos = new Float32Array(feitosAntigos.length*3);
+    feitosAntigos.forEach(({card}, i)=>{
+      const a = ang(card.id+"d"), u = simetrico(card.id+"du")*0.5;
+      const r = 430 + uni(card.id+"dr")*70;
+      pos[i*3] = Math.cos(a)*r; pos[i*3+1] = u*r*0.5; pos[i*3+2] = Math.sin(a)*r;
+    });
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    grupoDado.add(new THREE.Points(geo, new THREE.PointsMaterial({
+      size: 3.0, map: texGlow(0), color: COR_FEITO, transparent: true, opacity: .28,
+      blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
+    })));
+  }
+
+  contar(state);
+  if(!zoomManual) enquadrar();
+}
+
+// enquadramento derivado da CENA, não constante na mão: a extensão muda com o
+// dado (área nova, card em `depois` bem longe) e chutar o raio da câmera deixava
+// sistema cortado fora da tela. Só vale até o Gabriel usar a roda — a partir daí
+// o zoom é dele.
+// ⚠️ Fórmula analítica (raio da cena / tan(fov)) NÃO serve: ela ignora a
+// perspectiva, e o sistema que está na frente da câmera projeta muito maior que
+// o de trás — media 17/08/2026 cortando o sistema `trabalho` fora da tela.
+// Aqui a medida é a projeção real de cada corpo (NDC), iterada até caber.
+const ALVO_NDC = 0.88;   // fração do menor eixo da tela que a cena ocupa
+function enquadrar(){
+  const pts = [...corpos.map(c=>c.sprite.position), ...posEstrelas];
+  if(!pts.length) return;
+  const v = new THREE.Vector3();
+  for(let it=0; it<8; it++){
+    posicionarCamera();
+    camera.updateMatrixWorld();
+    let m = 0;
+    for(const p of pts){
+      v.copy(p).project(camera);
+      m = Math.max(m, Math.abs(v.x), Math.abs(v.y));
+    }
+    if(m <= 0.001) break;
+    if(Math.abs(m - ALVO_NDC) < 0.02) break;
+    camState.raio = Math.min(520, Math.max(34, camState.raio * (m / ALVO_NDC)));
+  }
+  posicionarCamera();
+}
+
+function contar(state){
+  const vivos = cardsVivosCeu(state);
+  const n = (s)=> vivos.filter(c=>c.status===s).length;
+  document.getElementById("nAgora").textContent     = n("agora");
+  document.getElementById("nDecisao").textContent   = n("decisao");
+  document.getElementById("nEsperando").textContent = n("esperando");
+  document.getElementById("nFila").textContent      = n("proximo");
+}
+
+// ---------- câmera: controle próprio (OrbitControls é addon, não vale o peso) ----------
+const camState = { raio: 163, azim: 0.6, elev: 0.52 };
+let zoomManual = false;   // roda do mouse desliga o auto-enquadramento
+function posicionarCamera(){
+  const { raio, azim, elev } = camState;
+  camera.position.set(
+    Math.cos(azim) * Math.cos(elev) * raio,
+    Math.sin(elev) * raio,
+    Math.sin(azim) * Math.cos(elev) * raio,
+  );
+  camera.lookAt(0, 0, 0);
+}
+// ⚠️ Os listeners ficam no `#palco`, não no canvas: o canvas é destruído
+// quando o céu dorme (e recriado ao acordar), e listener em elemento removido
+// vai embora com ele.
+let arrastando = false, ultimoXY = null;
+palco.addEventListener("pointerdown", e=>{
+  arrastando = true; ultimoXY = [e.clientX, e.clientY]; palco.classList.add("arrastando");
+  palco.setPointerCapture(e.pointerId);
+});
+palco.addEventListener("pointerup", e=>{
+  arrastando = false; palco.classList.remove("arrastando");
+  try{ palco.releasePointerCapture(e.pointerId); }catch(_){}
+});
+palco.addEventListener("pointermove", e=>{
+  mouse.x = e.clientX; mouse.y = e.clientY; mouse.dentro = true;
+  if(!arrastando || !ultimoXY) return;
+  camState.azim += (e.clientX - ultimoXY[0]) * 0.005;   // horizontal invertido a pedido do Gabriel (29/08/2026); vertical inalterado
+  camState.elev = Math.min(1.36, Math.max(0.14, camState.elev + (e.clientY - ultimoXY[1]) * 0.004));
+  ultimoXY = [e.clientX, e.clientY];
+  posicionarCamera(); pedirFrame();
+});
+palco.addEventListener("pointerleave", ()=>{ mouse.dentro = false; esconderDica(); });
+palco.addEventListener("wheel", e=>{
+  e.preventDefault();
+  zoomManual = true;
+  camState.raio = Math.min(520, Math.max(34, camState.raio * (1 + Math.sign(e.deltaY) * 0.09)));
+  posicionarCamera(); pedirFrame();
+}, {passive:false});
+
+// ---------- hover e clique ----------
+const mouse = { x: 0, y: 0, dentro: false };
+const ray = new THREE.Raycaster();
+const dica = document.getElementById("dica");
+let sobCursor = null;
+function esconderDica(){ dica.style.opacity = 0; sobCursor = null; }
+function testarCursor(){
+  if(!mouse.dentro || arrastando) return;
+  const r = palco.getBoundingClientRect();
+  const v = new THREE.Vector2(
+    ((mouse.x - r.left) / r.width) * 2 - 1,
+    -((mouse.y - r.top) / r.height) * 2 + 1,
+  );
+  ray.setFromCamera(v, camera);
+  // os feitos são `Points`: sem threshold o raio passa direto por eles
+  ray.params.Points.threshold = 4.5;
+  const hits = ray.intersectObjects([...mapaHover.keys()], false);
+  if(!hits.length){ esconderDica(); return; }
+
+  const bruto = mapaHover.get(hits[0].object);
+  const info = typeof bruto === "function" ? bruto(hits[0].index) : bruto;
+  if(!info){ esconderDica(); return; }
+
+  let titulo, linha;
+  if(info.corpo){
+    const c = info.corpo;
+    sobCursor = c;
+    const partes = [nomeArea.get(c.card.area) || c.card.area, c.card.status];
+    if(c.card.criado_em){
+      const d = Math.floor(idadeDias(c.card.criado_em));
+      partes.push(d === 0 ? "hoje" : d + "d");
+    }
+    if(c.sessao) partes.push("sessão " + c.sessao);
+    titulo = c.card.titulo; linha = partes.join(" · ");
+  }else{
+    // estrela de área ou card já feito: mostra, mas não é alvo de clique
+    sobCursor = info.id ? { card: { id: info.id } } : null;
+    titulo = info.titulo; linha = info.linha;
+  }
+  dica.querySelector(".t").textContent = titulo || "(sem título)";
+  dica.querySelector(".m").textContent = linha || "";
+  dica.style.left = Math.min(innerWidth - 340, mouse.x + 14) + "px";
+  dica.style.top  = Math.min(innerHeight - 80, mouse.y + 14) + "px";
+  dica.style.opacity = 1;
+}
+palco.addEventListener("click", ()=>{
+  if(!sobCursor) return;
+  // o céu é radar; o board é cockpit. Clique volta pro kanban com o card aberto,
+  // ou abre a aba da sessão solta — a mesma ação que a faixa "precisam de você".
+  if(sobCursor.sid)
+    parent.postMessage({ fonte: "ceu", tipo: "abrirSessao", sid: sobCursor.sid }, location.origin);
+  else if(sobCursor.card.id)
+    parent.postMessage({ fonte: "ceu", tipo: "abrirCard", id: sobCursor.card.id }, location.origin);
+});
+
+// ---------- política de fps (requisito: não rodar fora do maximizado) ----------
+// ⚠️ A web NÃO sabe dizer que a janela está COBERTA por outra. visibilityState
+// pega minimizado/troca de view; janela atrás de outra continua "visible" e cai
+// no caso "sem foco" (8 fps). Só um host nativo resolveria — fora deste escopo.
+let visivelNaTela = true;
+const topo = (()=>{ try{ return window.top.document ? window.top : window; }catch(_){ return window; } })();
+function janelaGrande(){
+  const w = topo.innerWidth || innerWidth, h = topo.innerHeight || innerHeight;
+  const aw = screen.availWidth || w, ah = screen.availHeight || h;
+  return w >= aw * 0.85 && h >= ah * 0.70;
+}
+function temFoco(){
+  try{ return topo.document.hasFocus(); }catch(_){ return document.hasFocus(); }
+}
+function alvoFps(){
+  if(document.visibilityState === "hidden" || !visivelNaTela) return 0;
+  if(!janelaGrande()) return 0;
+  return temFoco() ? 30 : 8;
+}
+
+let rodando = false, ultimoFrame = 0, t0 = performance.now();
+let dormindo = true;    // nasce dormindo: quem acorda é o primeiro pedirFrame()
+
+// DORMIR é mais forte que "0 fps" (pedido do Gabriel, 17/08/2026): parar o loop
+// deixaria o contexto WebGL vivo, segurando memória e um pedaço de GPU à toa.
+// Aqui o canvas sai do DOM, o contexto é liberado (`forceContextLoss`) e as
+// texturas/geometrias vão junto. Custo do outro lado: acordar reconstrói a cena
+// (~poucos ms com 84 cards) — barato perto de manter GPU presa o dia inteiro.
+function dormir(){
+  if(dormindo) return;
+  dormindo = true; rodando = false;
+  esconderDica();
+  limparGrupo(grupoDado);
+  grupoDado = new THREE.Group();
+  corpos.length = 0; posEstrelas = [];
+  destruirFundo();
+  destruirTexturas();
+  destruirRenderer();
+}
+function acordar(){
+  if(!dormindo) return;
+  dormindo = false;
+  criarRenderer();
+  criarFundo();
+  mundo.add(grupoDado);
+  redimensionar();
+  if(stateAtual) construir(stateAtual);   // reconstrói do estado que já está em memória
+  posicionarCamera();
+}
+function pedirFrame(){
+  if(alvoFps() === 0) return;             // continua dormindo
+  if(dormindo) acordar();
+  if(!rodando){ rodando = true; requestAnimationFrame(loop); }
+}
+function loop(agora){
+  const alvo = alvoFps();
+  const pequena = !janelaGrande() && document.visibilityState !== "hidden" && visivelNaTela;
+  document.getElementById("aviso").classList.toggle("on", pequena);
+  if(alvo === 0){ dormir(); return; }     // GPU devolvida: sem canvas, sem contexto, sem rAF
+  if(!renderer){ acordar(); }
+  if(agora - ultimoFrame >= 1000 / alvo - 1){
+    ultimoFrame = agora;
+    const t = (agora - t0) / 1000;
+    mundo.rotation.y = (t / REVOLUCAO_S) * Math.PI * 2;   // o céu gira em BLOCO
+    for(const c of corpos){
+      const k = 1 + c.amp * Math.sin((t / c.periodo) * Math.PI * 2 + c.fase);
+      const s = c.base * k;
+      c.sprite.scale.set(s, s, 1);
+      for(const e of c.extras){ const es = c.base * e.mult * k; e.sprite.scale.set(es, es, 1); }
+    }
+    if(alvo >= 30) testarCursor(); else esconderDica();
+    renderer.render(scene, camera);
+  }
+  requestAnimationFrame(loop);
+}
+for(const ev of ["visibilitychange","focus","blur","resize"]) addEventListener(ev, ()=>{ redimensionar(); pedirFrame(); });
+addEventListener("pointerdown", pedirFrame);
+try{
+  new IntersectionObserver((es)=>{ visivelNaTela = es.some(e=>e.isIntersecting); pedirFrame(); },
+    { threshold: 0.01 }).observe(palco);
+}catch(_){}
+
+function redimensionar(){
+  const w = palco.clientWidth || innerWidth, h = palco.clientHeight || innerHeight;
+  if(renderer) renderer.setSize(w, h, false);
+  camera.aspect = w / Math.max(1, h);
+  camera.updateProjectionMatrix();
+  if(!zoomManual && corpos.length) enquadrar();   // aspect mudou: reenquadra
+}
+
+// ---------- legenda escondível ----------
+const legenda = document.getElementById("legenda"), hud = document.getElementById("hud");
+let textoVisivel = localStorage.getItem("ceu.texto") !== "0";
+function aplicarTexto(){
+  legenda.hidden = !textoVisivel; hud.hidden = !textoVisivel;
+  localStorage.setItem("ceu.texto", textoVisivel ? "1" : "0");
+}
+addEventListener("keydown", e=>{
+  if(e.key === "l" || e.key === "L"){ textoVisivel = !textoVisivel; aplicarTexto(); }
+  // F = tela cheia. É o modo que o Gabriel descreveu ("deixar de fundo
+  // visualizando"): sem cabeçalho do board, sem kanban, só o céu.
+  if(e.key === "f" || e.key === "F"){
+    if(document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen?.().catch(()=>{});
+  }
+});
+aplicarTexto();
+
+// ---------- dado: poll do /api/state, só quando a tela está viva ----------
+// ⚠️ NÃO usar `atualizado_em` como detector de mudança. Medido em 17/08/2026:
+// 28 cards entraram no `pendencias.json` (importação em lote) e o carimbo ficou
+// parado no horário anterior — quem grava fora do front nem sempre atualiza o
+// campo. Quem confia nele fica cego (o poll de "cards ao vivo" do board tem o
+// mesmo ponto cego). Aqui a assinatura é do que o céu de fato desenha: 84 cards
+// dão ~7 KB de string a cada 15 s, custo irrelevante.
+// ⚠️ `removido` ENTRA na assinatura (Fase 4, 07/09/2026). Sem ele, remover um
+// card não muda `status`, `area`, `tipo`, `urgente`, `importante`, `modelos`,
+// `criado_em`, `concluido_em` NEM `cards.length` (o card fica no array) — a
+// assinatura sairia idêntica, `carregar()` retornaria cedo e o céu continuaria
+// desenhando o card removido até alguém dar F5.
+function assinatura(s){
+  const cs = (s.cards||[]).map(c=>
+    `${c.id}:${c.status}:${c.area}:${c.tipo}:${c.urgente?1:0}:${c.importante?1:0}` +
+    `:${(c.modelos||[]).length}:${c.criado_em||""}:${c.concluido_em||""}:${cardRemovidoCeu(c)?1:0}`).join("|");
+  const as = (s.areas||[]).map(a=>`${a.id}:${a.cor}:${a.ordem}`).join("|");
+  return `${hash32(cs)}:${hash32(as)}:${(s.cards||[]).length}`;
+}
+let assinaturaAtual = null, assinaturaSessoes = null;
+// Fase 1.4: ETag por rota. É a camada de TRANSPORTE (304, zero byte no fio);
+// as assinaturas acima continuam intactas porque respondem a outra pergunta
+// — "mudou algo que o CÉU desenha?" —, e o 304 só sabe dizer "mudou algo".
+// As duas defesas juntas, como manda `docs/CEU-3D.md` § Como o dado chega.
+const etagCeu = { estado: null, sessoes: null };
+// as sessões mudam de estado muito mais rápido que os cards (a cada 10 s aqui),
+// e só o que muda o DESENHO reconstrói a cena: estado por session_id.
+async function carregarSessoes(){
+  if(alvoFps() === 0 && sessoesPorId.size) return;
+  try{
+    const r = await fetch("/api/sessoes", { cache: "no-store",
+      headers: etagCeu.sessoes ? {"If-None-Match": etagCeu.sessoes} : {} });
+    if(r.status === 304) return;
+    if(!r.ok) return;
+    etagCeu.sessoes = r.headers.get("ETag") || null;
+    const d = await r.json();
+    const novo = new Map();
+    for(const s of (d.sessoes || [])){
+      if(s.estado === "fechada" || !s.session_id) continue;
+      novo.set(s.session_id, { estado: s.estado, rotulo: s.rotulo, cwd: s.cwd });
+    }
+    const assin = [...novo].map(([k, v]) => `${k}:${v.estado}`).sort().join("|");
+    if(assin === assinaturaSessoes) return;
+    assinaturaSessoes = assin;
+    sessoesPorId = novo;
+    // dormindo, não se constrói nada: acordar() reconstrói do estado em memória
+    if(stateAtual && !dormindo){ construir(stateAtual); pedirFrame(); }
+  }catch(e){ /* servidor fora do ar: o céu segue desenhando o que já tem */ }
+}
+async function carregar(){
+  if(alvoFps() === 0 && stateAtual) return;     // parado: não gasta rede nem CPU
+  try{
+    const r = await fetch("/api/state", { cache: "no-store",
+      headers: etagCeu.estado ? {"If-None-Match": etagCeu.estado} : {} });
+    if(r.status === 304) return;
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    etagCeu.estado = r.headers.get("ETag") || null;
+    const s = await r.json();
+    const assin = assinatura(s);
+    if(stateAtual && assin === assinaturaAtual) return;   // nada que o céu mostre mudou
+    assinaturaAtual = assin;
+    stateAtual = s;
+    if(!dormindo){ construir(s); pedirFrame(); }
+  }catch(e){
+    const el = document.getElementById("erro");
+    el.textContent = "não consegui ler /api/state: " + e.message +
+      " — o céu precisa do servidor da central no ar (Central.exe ou server.py).";
+    el.classList.add("on");
+  }
+}
+// gancho de diagnóstico: é por aqui que o teste de determinismo mede (duas
+// cargas do mesmo estado têm que dar as MESMAS posições) e que se confere a
+// política de fps sem olhômetro. Só leitura.
+window.__ceu = {
+  get n(){ return corpos.length; },
+  get fps(){ return alvoFps(); },
+  get camera(){ return { ...camState }; },
+  get alvos(){ return mapaHover.size; },
+  get dormindo(){ return dormindo; },
+  get temContexto(){ return !!renderer; },
+  // coordenadas de tela de um exemplar de cada tipo de alvo — é como o teste de
+  // hover confere que TODA orbe responde, sem depender de mira manual
+  amostraHover(){
+    const r = palco.getBoundingClientRect(), v = new THREE.Vector3(), fora = [];
+    const vistos = new Set();
+    for(const [obj, info] of mapaHover){
+      const tipo = typeof info === "function" ? "feito"
+                 : info.corpo ? (info.corpo.sid ? "sessao-solta" : "card") : "area";
+      if(vistos.has(tipo)) continue;
+      const p = obj.isPoints
+        ? new THREE.Vector3().fromBufferAttribute(obj.geometry.getAttribute("position"), 0)
+        : obj.position.clone();
+      obj.parent?.localToWorld(p);
+      v.copy(p).project(camera);
+      vistos.add(tipo);
+      fora.push({ tipo, x: Math.round(r.left + (v.x + 1) / 2 * r.width),
+                        y: Math.round(r.top - (v.y - 1) / 2 * r.height) });
+    }
+    return fora;
+  },
+  posicoes(){
+    return corpos.map(c=>({
+      id: c.card.id || c.sid || "?", status: c.card.status, sessao: c.sessao || null,
+      p: c.sprite.position.toArray().map(v=>+v.toFixed(4)),
+      cor: c.sprite.material.color.getHexString(),
+      tam: +c.base.toFixed(3),
+    })).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+  },
+};
+
+posicionarCamera();
+// acorda antes de carregar, se a tela permite: evita construir a cena duas vezes
+// no boot (uma no carregar, outra no acordar). Se a janela estiver pequena ou
+// oculta, nasce dormindo mesmo — com o dado em memória, pronto para acordar.
+if(alvoFps() > 0) acordar();
+await carregarSessoes();     // antes do primeiro construir(), senão o eclipse só aparece no 2º frame
+await carregar();
+setInterval(carregar, 15000);
+setInterval(carregarSessoes, 10000);
+pedirFrame();
+</script>
+</body>
+</html>
